@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EarnyHA - Earn Rewards</title>
+    
+    <!-- External Libraries -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDKs (Compatibility Version for single-file projects) -->
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        /* --- 1. Global & Setup CSS --- */
+        :root {
+            --primary-color: #00ffc3;
+            --secondary-color: #a972ff;
+            --background-dark: #1a1a2e;
+            --text-light: #e0e0e0;
+            --text-dark: #333;
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --shadow-color: rgba(31, 38, 135, 0.37);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #161623; color: var(--text-light); }
+
+        /* --- 2. Mobile App Container & Background --- */
+        .mobile-container { width: 375px; height: 812px; background: var(--background-dark); border-radius: 40px; box-shadow: 0 15px 50px rgba(0,0,0,0.5); overflow: hidden; position: relative; display: flex; flex-direction: column; }
+        .background-shapes { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        .background-shapes .shape { position: absolute; border-radius: 50%; filter: blur(2px); animation: move 20s linear infinite; }
+        .background-shapes .shape1 { width: 250px; height: 250px; background: var(--primary-color); top: -50px; left: -80px; animation-duration: 25s; }
+        .background-shapes .shape2 { width: 200px; height: 200px; background: var(--secondary-color); bottom: -50px; right: -60px; animation-duration: 20s; }
+        .background-shapes .shape3 { width: 150px; height: 150px; background: #ff57a4; bottom: 200px; left: -40px; animation-duration: 30s; }
+        @keyframes move { 0% { transform: translateY(0) translateX(0) rotate(0deg); } 50% { transform: translateY(50px) translateX(-50px) rotate(180deg); } 100% { transform: translateY(0) translateX(0) rotate(360deg); } }
+
+        /* --- 3. App Structure (Auth, Main App UI) --- */
+        .app-screen-wrapper { position: relative; z-index: 2; height: 100%; display: flex; flex-direction: column; }
+        .auth-screen { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; height: 100%; position: absolute; width: 100%; transition: opacity 0.3s ease, visibility 0.3s; }
+        .auth-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        .auth-card { width: 100%; text-align: center; }
+        .auth-card h1 { font-size: 40px; font-weight: 700; color: white; margin-bottom: 10px; }
+        .auth-card p { margin-bottom: 30px; opacity: 0.8; }
+        .form-switcher { margin-top: 20px; font-size: 14px; opacity: 0.8; }
+        .form-switcher span { font-weight: 600; color: var(--primary-color); cursor: pointer; text-decoration: underline; }
+        
+        .app-header { padding: 25px 20px 15px; display: flex; justify-content: space-between; align-items: center; }
+        .app-header h1 { font-size: 24px; font-weight: 700; color: white; text-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        #main-content { flex-grow: 1; padding: 0 20px 20px; overflow-y: auto; scrollbar-width: none; }
+        #main-content::-webkit-scrollbar { display: none; }
+        .bottom-nav { display: flex; padding: 10px 0; margin: 0 20px 10px; border-radius: 25px; }
+        .nav-button { flex: 1; background: none; border: none; color: var(--text-light); display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 8px 0; transition: all 0.3s ease; font-size: 12px; }
+        .nav-button i { font-size: 22px; margin-bottom: 4px; }
+        .nav-button.active { color: var(--primary-color); transform: translateY(-5px); }
+        
+        /* --- 4. Glassmorphism Card & Common Elements --- */
+        .glass-card { background: var(--glass-bg); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid var(--glass-border); border-radius: 20px; padding: 20px; box-shadow: 0 8px 32px 0 var(--shadow-color); margin-bottom: 20px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; opacity: 0.8; }
+        .form-group input { width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--text-light); font-size: 16px; }
+        .btn-primary { width: 100%; padding: 15px; border: none; border-radius: 15px; font-size: 18px; font-weight: 600; cursor: pointer; background: linear-gradient(45deg, var(--primary-color), var(--secondary-color)); color: var(--text-dark); transition: all 0.3s ease; }
+        .btn-primary:hover { box-shadow: 0 0 20px var(--secondary-color); }
+        
+        /* --- 5. Screen-Specific Styles --- */
+        .balance-card h2 { font-size: 18px; font-weight: 300; opacity: 0.8; }
+        .balance-card .balance-amount { font-size: 48px; font-weight: 700; color: white; margin: 10px 0; }
+        .balance-card .balance-amount sup { font-size: 24px; font-weight: 600; margin-right: 4px; }
+        .actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .action-button { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 15px; padding: 20px 10px; text-align: center; cursor: pointer; transition: transform 0.2s ease, background 0.2s ease; }
+        .action-button:hover { transform: translateY(-5px); background: rgba(255, 255, 255, 0.2); }
+        .action-button i { font-size: 28px; color: var(--primary-color); margin-bottom: 10px; }
+        .action-button p { font-size: 14px; font-weight: 600; }
+        .profile-info p { font-size: 18px; margin-bottom: 10px; }
+        .profile-info span { font-weight: 700; color: var(--primary-color); }
+        
+        /* UPDATED Task Card Styles */
+        .task-item { display: flex; padding: 15px; gap: 15px; }
+        .task-item-image { width: 80px; height: 80px; object-fit: cover; border-radius: 15px; flex-shrink: 0; }
+        .task-item-content { flex-grow: 1; display: flex; flex-direction: column; }
+        .task-item-content h4 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+        .task-item-content .task-description { font-size: 13px; opacity: 0.8; margin-bottom: 8px; flex-grow: 1; }
+        .task-item-content .task-reward { font-size: 14px; font-weight: 700; color: var(--primary-color); margin-bottom: 10px; }
+        .task-button { background: linear-gradient(45deg, var(--primary-color), var(--secondary-color)); color: var(--text-dark); border: none; padding: 8px 15px; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; text-align: center; }
+        .task-button:hover { opacity: 0.9; box-shadow: 0 0 15px var(--primary-color); }
+        .task-button:disabled { background: #555; color: #999; cursor: not-allowed; }
+
+        /* --- 6. Utility and Helper Classes --- */
+        .hidden { display: none !important; }
+        .content-screen.hidden { display: none !important; }
+        .screen-title { text-align: center; font-size: 22px; font-weight: 600; margin-bottom: 25px; }
+        #toast-notification { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: linear-gradient(45deg, var(--primary-color), var(--secondary-color)); color: var(--text-dark); padding: 12px 25px; border-radius: 15px; font-weight: 600; z-index: 1000; opacity: 0; transition: opacity 0.5s, bottom 0.5s; pointer-events: none; }
+        #toast-notification.show { bottom: 120px; opacity: 1; }
+    </style>
+</head>
+<body>
+    <div class="mobile-container">
+        <div class="background-shapes"><div class="shape shape1"></div><div class="shape shape2"></div><div class="shape shape3"></div></div>
+        <div class="app-screen-wrapper">
+            <!-- Auth screens -->
+            <div id="auth-container">
+                <div id="login-screen" class="auth-screen">
+                    <div class="glass-card auth-card"><h1>EarnyHA</h1><p>Login to start earning rewards</p><div class="form-group"><input type="email" id="login-email-input" placeholder="Enter your email"></div><div class="form-group"><input type="password" id="login-password-input" placeholder="Enter your password"></div><button id="login-button" class="btn-primary">Login</button><p class="form-switcher">Don't have an account? <span id="switch-to-register">Register</span></p></div>
+                </div>
+                <div id="register-screen" class="auth-screen hidden">
+                    <div class="glass-card auth-card"><h1>Register</h1><p>Create your new account</p><div class="form-group"><input type="text" id="register-username-input" placeholder="Choose a username"></div><div class="form-group"><input type="email" id="register-email-input" placeholder="Enter your email"></div><div class="form-group"><input type="password" id="register-password-input" placeholder="Create a password"></div><div class="form-group"><input type="password" id="register-confirm-password-input" placeholder="Confirm password"></div><button id="register-button" class="btn-primary">Create Account</button><p class="form-switcher">Already have an account? <span id="switch-to-login">Login</span></p></div>
+                </div>
+            </div>
+
+            <!-- Main App UI -->
+            <header class="app-header hidden"><h1>EarnyHA</h1><i class="fa-solid fa-right-from-bracket" style="font-size: 24px; cursor: pointer;" id="logout-button"></i></header>
+            <main id="main-content" class="hidden">
+                <div id="home-screen" class="content-screen"><div class="glass-card balance-card"><h2>Your Current Balance</h2><p class="balance-amount"><sup>$</sup><span id="balance-display">0.00</span></p></div><div class="actions-grid"><div class="action-button" onclick="showScreen('tasks')"><i class="fa-solid fa-list-check"></i><p>Earn Now</p></div><div class="action-button" onclick="showScreen('withdraw')"><i class="fa-solid fa-wallet"></i><p>Withdraw</p></div></div></div>
+                <div id="tasks-screen" class="content-screen hidden"><h2 class="screen-title">Complete Tasks to Earn</h2><div id="task-list"></div></div>
+                <div id="withdraw-screen" class="content-screen hidden"><h2 class="screen-title">Withdraw Funds</h2><div class="glass-card"><div class="form-group"><label for="withdraw-amount">Amount ($)</label><input type="number" id="withdraw-amount" placeholder="e.g., 10.50"></div><div class="form-group"><label for="paypal-email">PayPal Email</label><input type="email" id="paypal-email" placeholder="youremail@example.com"></div><button id="withdraw-button" class="btn-primary">Request Withdrawal</button></div></div>
+                <div id="profile-screen" class="content-screen hidden"><h2 class="screen-title">My Profile</h2><div class="glass-card profile-info"><p>Username: <span id="profile-username"></span></p><p>Email: <span id="profile-email"></span></p><p>Total Earned: <span>$<span id="profile-total-earned"></span></span></p></div></div>
+            </main>
+            <nav class="bottom-nav glass-card hidden">
+                <button class="nav-button active" data-screen="home"><i class="fa-solid fa-house"></i>Home</button><button class="nav-button" data-screen="tasks"><i class="fa-solid fa-rocket"></i>Tasks</button><button class="nav-button" data-screen="withdraw"><i class="fa-solid fa-money-bill-transfer"></i>Withdraw</button><button class="nav-button" data-screen="profile"><i class="fa-solid fa-user"></i>Profile</button>
+            </nav>
+        </div>
+        <div id="toast-notification"></div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- 1. Firebase Configuration & Initialization ---
+        // !!! IMPORTANT: REPLACE WITH YOUR FIREBASE PROJECT'S CONFIGURATION !!!
+        const firebaseConfig = {
+  apiKey: "AIzaSyAvOCamAwrk7yg-I6RVuMfzE_vKbZlAwwo",
+  authDomain: "earnyha-app.firebaseapp.com",
+  projectId: "earnyha-app",
+  storageBucket: "earnyha-app.firebasestorage.app",
+  messagingSenderId: "117222358496",
+  appId: "1:117222358496:web:40ef494c898fea61ebff85",
+  measurementId: "G-ME6C5D883Z"
+};
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // --- 2. Global State ---
+        let currentUser = null;
+        let unsubscribeUserData = null;
+        let availableTasks = [];
+
+        // --- 3. DOM Selectors ---
+        const loginEmailInput = document.getElementById('login-email-input'), loginPasswordInput = document.getElementById('login-password-input'), registerUsernameInput = document.getElementById('register-username-input'), registerEmailInput = document.getElementById('register-email-input'), registerPasswordInput = document.getElementById('register-password-input'), registerConfirmPasswordInput = document.getElementById('register-confirm-password-input'), balanceDisplay = document.getElementById('balance-display'), taskListContainer = document.getElementById('task-list'), profileUsername = document.getElementById('profile-username'), profileEmail = document.getElementById('profile-email'), profileTotalEarned = document.getElementById('profile-total-earned');
+        const authContainer = document.getElementById('auth-container'), appHeader = document.querySelector('.app-header'), mainContent = document.getElementById('main-content'), bottomNav = document.querySelector('.bottom-nav');
+
+        // --- 4. Core App Logic (Firebase Auth & Data Fetching) ---
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentUser = user;
+                const userRef = db.collection('users').doc(user.uid);
+                unsubscribeUserData = userRef.onSnapshot(async (doc) => {
+                    if (doc.exists) {
+                        const userData = doc.data();
+                        balanceDisplay.textContent = userData.balance.toFixed(2);
+                        profileUsername.textContent = userData.username;
+                        profileEmail.textContent = userData.email;
+                        profileTotalEarned.textContent = userData.totalEarned.toFixed(2);
+                        await fetchAndRenderTasks(userData.completedTasks || []);
+                    }
+                });
+                showAppUI(true);
+                showScreen('home');
+            } else {
+                currentUser = null;
+                if (unsubscribeUserData) unsubscribeUserData();
+                showAppUI(false);
+            }
+        });
+
+        async function fetchAndRenderTasks(completedTaskIds) {
+            try {
+                const snapshot = await db.collection('tasks').orderBy("createdAt", "desc").get();
+                availableTasks = [];
+                snapshot.forEach(doc => availableTasks.push({ id: doc.id, ...doc.data() }));
+                renderTasks(completedTaskIds);
+            } catch (error) { console.error("Error fetching tasks:", error); }
+        }
+
+        // --- 5. UI Rendering ---
+        function renderTasks(completedTaskIds) {
+            taskListContainer.innerHTML = '';
+            if (availableTasks.length === 0) {
+                taskListContainer.innerHTML = '<div class="glass-card" style="text-align: center;"><p>No tasks available right now. Check back later!</p></div>';
+                return;
+            }
+            availableTasks.forEach(task => {
+                const isCompleted = completedTaskIds.includes(task.id);
+                const taskCard = document.createElement('div');
+                taskCard.className = 'glass-card task-item';
+                taskCard.innerHTML = `
+                    <img src="${task.imageUrl}" alt="${task.name}" class="task-item-image">
+                    <div class="task-item-content">
+                        <h4>${task.name}</h4>
+                        <p class="task-description">${task.description}</p>
+                        <p class="task-reward">+ $${task.reward.toFixed(2)}</p>
+                        <button class="task-button" data-task-id="${task.id}" ${isCompleted ? 'disabled' : ''}>
+                            ${isCompleted ? 'Completed' : 'Complete Task'}
+                        </button>
+                    </div>
+                `;
+                taskListContainer.appendChild(taskCard);
+            });
+            addTaskButtonListeners();
+        }
+
+        // --- 6. Event Handlers & Actions ---
+        async function handleCompleteTask(taskId, button) {
+            const task = availableTasks.find(t => t.id === taskId);
+            if (!task || !currentUser) return;
+            button.disabled = true;
+            button.textContent = 'Processing...';
+            window.open(task.buttonUrl, '_blank');
+            
+            setTimeout(async () => {
+                const userRef = db.collection('users').doc(currentUser.uid);
+                try {
+                    await db.runTransaction(async (transaction) => {
+                        const userDoc = await transaction.get(userRef);
+                        if (!userDoc.exists) throw "User not found!";
+                        const completedTasks = userDoc.data().completedTasks || [];
+                        if (completedTasks.includes(task.id)) { showToast("Task already completed."); return; }
+                        transaction.update(userRef, {
+                            balance: firebase.firestore.FieldValue.increment(task.reward),
+                            totalEarned: firebase.firestore.FieldValue.increment(task.reward),
+                            completedTasks: firebase.firestore.FieldValue.arrayUnion(task.id)
+                        });
+                    });
+                    showToast(`+ $${task.reward.toFixed(2)} added!`);
+                } catch (error) {
+                    showToast("Error: " + error);
+                    button.disabled = false;
+                    button.textContent = 'Complete Task';
+                }
+            }, 3000); // 3-second delay
+        }
+
+        async function handleRegistration() {
+            const username = registerUsernameInput.value.trim();
+            const email = registerEmailInput.value.trim();
+            const password = registerPasswordInput.value;
+            const confirmPassword = registerConfirmPasswordInput.value;
+            if (!username || !email || !password) { showToast("Please fill all fields."); return; }
+            if (password !== confirmPassword) { showToast("Passwords do not match."); return; }
+            try {
+                const cred = await auth.createUserWithEmailAndPassword(email, password);
+                await db.collection('users').doc(cred.user.uid).set({ username, email, balance: 0, totalEarned: 0, completedTasks: [], memberSince: firebase.firestore.FieldValue.serverTimestamp() });
+            } catch (err) { showToast(err.message); }
+        }
+
+        async function handleLogin() {
+            const email = loginEmailInput.value.trim();
+            const password = loginPasswordInput.value;
+            if (!email || !password) { showToast("Please enter email and password."); return; }
+            try { await auth.signInWithEmailAndPassword(email, password); } 
+            catch (err) { showToast(err.message); }
+        }
+
+        // --- 7. Event Listeners & Helper Functions ---
+        const addTaskButtonListeners = () => { document.querySelectorAll('.task-button').forEach(b => { b.addEventListener('click', () => { handleCompleteTask(b.dataset.taskId, b); }); }); };
+        document.getElementById('switch-to-register').addEventListener('click', () => toggleAuthForms('register'));
+        document.getElementById('switch-to-login').addEventListener('click', () => toggleAuthForms('login'));
+        document.getElementById('register-button').addEventListener('click', handleRegistration);
+        document.getElementById('login-button').addEventListener('click', handleLogin);
+        document.getElementById('logout-button').addEventListener('click', () => auth.signOut());
+        document.querySelectorAll('.nav-button').forEach(b => b.addEventListener('click', () => showScreen(b.dataset.screen)));
+        
+        function toggleAuthForms(show) { if (show === 'register') { document.getElementById('login-screen').classList.add('hidden'); document.getElementById('register-screen').classList.remove('hidden'); } else { document.getElementById('register-screen').classList.add('hidden'); document.getElementById('login-screen').classList.remove('hidden'); } }
+        function showAppUI(show) { if (show) { authContainer.classList.add('hidden'); appHeader.classList.remove('hidden'); mainContent.classList.remove('hidden'); bottomNav.classList.remove('hidden'); } else { authContainer.classList.remove('hidden'); appHeader.classList.add('hidden'); mainContent.classList.add('hidden'); bottomNav.classList.add('hidden'); } }
+        window.showScreen = (screenId) => { document.querySelectorAll('.content-screen').forEach(s => s.classList.add('hidden')); document.getElementById(`${screenId}-screen`).classList.remove('hidden'); document.querySelectorAll('.nav-button').forEach(b => b.classList.toggle('active', b.dataset.screen === screenId)); };
+        const showToast = (message) => { const t = document.getElementById('toast-notification'); t.textContent = message; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); };
+    });
+    </script>
+</body>
+</html>

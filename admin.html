@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EarnyHA - Admin</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        /* CSS is mostly the same... */
+        :root {--primary-color: #00ffc3;--secondary-color: #a972ff;--danger-color: #ff5757;--background-dark: #1a1a2e;--text-light: #e0e0e0;--text-dark: #333;--glass-bg: rgba(255, 255, 255, 0.1);--glass-border: rgba(255, 255, 255, 0.2);--shadow-color: rgba(31, 38, 135, 0.37);}
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #161623; color: var(--text-light); }
+        .mobile-container { width: 375px; height: 812px; background: var(--background-dark); border-radius: 40px; box-shadow: 0 15px 50px rgba(0,0,0,0.5); overflow: hidden; position: relative; display: flex; flex-direction: column; }
+        .background-shapes { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        .background-shapes .shape { position: absolute; border-radius: 50%; filter: blur(2px); animation: move 20s linear infinite; }
+        .background-shapes .shape1 { width: 250px; height: 250px; background: var(--primary-color); top: -50px; left: -80px; animation-duration: 25s; }
+        .background-shapes .shape2 { width: 200px; height: 200px; background: var(--secondary-color); bottom: -50px; right: -60px; animation-duration: 20s; }
+        @keyframes move { 0% { transform: translateY(0) translateX(0) rotate(0deg); } 50% { transform: translateY(50px) translateX(-50px) rotate(180deg); } 100% { transform: translateY(0) translateX(0) rotate(360deg); } }
+        .app-screen-wrapper { position: relative; z-index: 2; height: 100%; display: flex; flex-direction: column; }
+        .glass-card { background: var(--glass-bg); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid var(--glass-border); border-radius: 20px; padding: 20px; box-shadow: 0 8px 32px 0 var(--shadow-color); margin-bottom: 20px; }
+        .hidden { display: none !important; }
+        #admin-login-screen { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; padding: 20px; }
+        .login-card { width: 100%; text-align: center; }
+        .login-card h1 { font-size: 32px; font-weight: 700; color: white; margin-bottom: 10px; }
+        .login-card p { opacity: 0.8; margin-bottom: 30px; }
+        .form-group input { width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--text-light); font-size: 16px; margin-bottom: 15px; }
+        .form-group label { display: block; text-align: left; margin-bottom: 5px; font-size: 14px; opacity: 0.8; }
+        .btn-primary { width: 100%; padding: 15px; border: none; border-radius: 15px; font-size: 18px; font-weight: 600; cursor: pointer; background: linear-gradient(45deg, var(--primary-color), var(--secondary-color)); color: var(--text-dark); transition: all 0.3s ease; }
+        .btn-primary:hover { box-shadow: 0 0 20px var(--secondary-color); }
+        #main-app-ui { height: 100%; display: flex; flex-direction: column; }
+        .app-header { padding: 25px 20px 15px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+        .app-header h1 { font-size: 24px; font-weight: 700; color: white; text-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .app-header i { cursor: pointer; font-size: 22px; }
+        #main-content { flex-grow: 1; padding: 0 20px 20px; overflow-y: auto; scrollbar-width: none; }
+        #main-content::-webkit-scrollbar { display: none; }
+        .bottom-nav { flex-shrink: 0; display: flex; padding: 10px 0; margin: 0 20px 10px; border-radius: 25px; }
+        .nav-button { flex: 1; background: none; border: none; color: var(--text-light); display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 8px 0; transition: all 0.3s ease; font-size: 12px; }
+        .nav-button i { font-size: 22px; margin-bottom: 4px; }
+        .nav-button.active { color: var(--primary-color); transform: translateY(-5px); }
+        .stat-card { text-align: center; }
+        .stat-card .stat-value { font-size: 36px; font-weight: 700; color: var(--primary-color); margin: 5px 0; }
+        .stat-card .stat-title { font-size: 16px; opacity: 0.8; }
+        .card-item { padding: 15px; }
+        .card-info p { margin: 0 0 8px; font-size: 14px; opacity: 0.9; word-break: break-all; }
+        .card-info p strong { font-weight: 600; color: var(--text-light); opacity: 1; }
+        .card-actions { margin-top: 15px; text-align: right; }
+        .delete-btn { background: var(--danger-color); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+        .task-image-preview { max-width: 100px; border-radius: 10px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="mobile-container">
+        <div class="background-shapes"><div class="shape shape1"></div><div class="shape shape2"></div></div>
+        <div class="app-screen-wrapper">
+            <div id="admin-login-screen">
+                <div class="glass-card login-card"><h1><i class="fas fa-user-shield"></i> Admin Panel</h1><p>Enter password to continue</p><div class="form-group"><input type="password" id="admin-password" placeholder="••••••••"></div><button id="admin-login-button" class="btn-primary">Access Panel</button></div>
+            </div>
+            <div id="main-app-ui" class="hidden">
+                <header class="app-header"><h1>Admin</h1><i class="fas fa-sign-out-alt" id="admin-logout-button" title="Logout"></i></header>
+                <main id="main-content">
+                    <div id="dashboard-screen" class="screen">
+                        <div class="glass-card stat-card"><p class="stat-value" id="total-users-stat">0</p><p class="stat-title">Total Users</p></div>
+                        <div class="glass-card stat-card"><p class="stat-value" id="total-balance-stat">$0.00</p><p class="stat-title">Total Combined Balance</p></div>
+                    </div>
+                    <div id="users-screen" class="screen hidden"><div id="user-list-container"></div></div>
+                    
+                    <!-- MODIFIED: Task Management Screen -->
+                    <div id="tasks-screen" class="screen hidden">
+                        <div class="glass-card">
+                            <h3>Add New Task</h3>
+                            <div class="form-group" style="margin-top: 20px;">
+                                <label for="task-name">Task Name (Title)</label>
+                                <input type="text" id="task-name" placeholder="e.g., Sign Up for AwesomeApp">
+                            </div>
+                            <div class="form-group">
+                                <label for="task-description">Task Description</label>
+                                <input type="text" id="task-description" placeholder="e.g., Get a $5 bonus when you sign up!">
+                            </div>
+                            <div class="form-group">
+                                <label for="task-image-url">Task Image URL</label>
+                                <input type="url" id="task-image-url" placeholder="https://.../image.png">
+                            </div>
+                            <div class="form-group">
+                                <label for="task-button-url">Task Button URL (Link)</label>
+                                <input type="url" id="task-button-url" placeholder="https://www.example.com/signup">
+                            </div>
+                            <div class="form-group">
+                                <label for="task-reward">Reward Amount ($)</label>
+                                <input type="number" id="task-reward" placeholder="e.g., 5.00" step="0.01">
+                            </div>
+                            <button id="add-task-button" class="btn-primary">Add Task</button>
+                        </div>
+                        <h3>Existing Tasks</h3>
+                        <div id="task-list-container"></div>
+                    </div>
+                </main>
+                <nav class="bottom-nav glass-card">
+                    <button class="nav-button active" data-screen="dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</button>
+                    <button class="nav-button" data-screen="users"><i class="fas fa-users"></i> Users</button>
+                    <button class="nav-button" data-screen="tasks"><i class="fas fa-tasks"></i> Tasks</button>
+                </nav>
+            </div>
+        </div>
+    </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- Firebase Config and Initialization ---
+        const firebaseConfig = {
+  apiKey: "AIzaSyAvOCamAwrk7yg-I6RVuMfzE_vKbZlAwwo",
+  authDomain: "earnyha-app.firebaseapp.com",
+  projectId: "earnyha-app",
+  storageBucket: "earnyha-app.firebasestorage.app",
+  messagingSenderId: "117222358496",
+  appId: "1:117222358496:web:40ef494c898fea61ebff85",
+  measurementId: "G-ME6C5D883Z"
+};
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // --- DOM Selectors ---
+        const loginScreen = document.getElementById('admin-login-screen'), mainAppUI = document.getElementById('main-app-ui'), loginButton = document.getElementById('admin-login-button'), passwordInput = document.getElementById('admin-password'), logoutButton = document.getElementById('admin-logout-button'), totalUsersStat = document.getElementById('total-users-stat'), totalBalanceStat = document.getElementById('total-balance-stat'), userListContainer = document.getElementById('user-list-container'), navButtons = document.querySelectorAll('.nav-button'), screens = document.querySelectorAll('.screen');
+        const taskListContainer = document.getElementById('task-list-container'), addTaskButton = document.getElementById('add-task-button');
+        // MODIFIED: New task input selectors
+        const taskNameInput = document.getElementById('task-name'), taskDescriptionInput = document.getElementById('task-description'), taskImageUrlInput = document.getElementById('task-image-url'), taskButtonUrlInput = document.getElementById('task-button-url'), taskRewardInput = document.getElementById('task-reward');
+
+        // --- Auth & Navigation (Unchanged) ---
+        const ADMIN_PASSWORD = "admin123";
+        function handleAdminLogin() { if (passwordInput.value === ADMIN_PASSWORD) { loginScreen.classList.add('hidden'); mainAppUI.classList.remove('hidden'); loadAllAdminData(); } else { alert('Incorrect password!'); } }
+        function handleAdminLogout() { passwordInput.value = ''; mainAppUI.classList.add('hidden'); loginScreen.classList.remove('hidden'); }
+        loginButton.addEventListener('click', handleAdminLogin);
+        passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleAdminLogin(); });
+        logoutButton.addEventListener('click', handleAdminLogout);
+        function showScreen(screenId) { screens.forEach(s => s.classList.add('hidden')); document.getElementById(`${screenId}-screen`).classList.remove('hidden'); navButtons.forEach(b => b.classList.toggle('active', b.dataset.screen === screenId)); }
+        navButtons.forEach(button => button.addEventListener('click', () => showScreen(button.dataset.screen)));
+
+        // --- Data Loading ---
+        function loadAllAdminData() { loadUsersAndStats(); loadTasks(); }
+        
+        // MODIFIED: Function to load tasks with new fields
+        async function loadTasks() {
+            try {
+                const snapshot = await db.collection('tasks').orderBy("createdAt", "desc").get();
+                let taskListHtml = '';
+                snapshot.forEach(doc => {
+                    const task = doc.data();
+                    taskListHtml += `<div class="glass-card card-item">
+                        <img src="${task.imageUrl}" class="task-image-preview" alt="Task Image">
+                        <div class="card-info">
+                            <p><strong>Name:</strong> ${task.name}</p>
+                            <p><strong>Desc:</strong> ${task.description}</p>
+                            <p><strong>URL:</strong> ${task.buttonUrl}</p>
+                            <p><strong>Reward:</strong> $${task.reward.toFixed(2)}</p>
+                        </div>
+                        <div class="card-actions">
+                            <button class="delete-btn delete-task-btn" data-id="${doc.id}"><i class="fas fa-trash-alt"></i> Delete</button>
+                        </div>
+                    </div>`;
+                });
+                taskListContainer.innerHTML = taskListHtml || '<div class="glass-card"><p>No tasks found. Add one above!</p></div>';
+            } catch (error) { console.error("Error loading tasks: ", error); }
+        }
+        
+        // MODIFIED: Function to add a task with new fields
+        async function handleAddTask() {
+            const name = taskNameInput.value.trim();
+            const description = taskDescriptionInput.value.trim();
+            const imageUrl = taskImageUrlInput.value.trim();
+            const buttonUrl = taskButtonUrlInput.value.trim();
+            const reward = parseFloat(taskRewardInput.value);
+
+            if (!name || !description || !imageUrl || !buttonUrl || isNaN(reward) || reward <= 0) {
+                alert("Please fill in all fields with valid values."); return;
+            }
+            try {
+                await db.collection('tasks').add({ 
+                    name, 
+                    description, 
+                    imageUrl, 
+                    buttonUrl, 
+                    reward,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp() // For ordering
+                });
+                alert('Task added successfully!');
+                [taskNameInput, taskDescriptionInput, taskImageUrlInput, taskButtonUrlInput, taskRewardInput].forEach(input => input.value = '');
+                loadTasks();
+            } catch (error) { console.error("Error adding task: ", error); alert('Failed to add task.'); }
+        }
+        addTaskButton.addEventListener('click', handleAddTask);
+        
+        // User/Task Deletion and User Loading (Unchanged)
+        mainAppUI.addEventListener('click', async (e) => { const button = e.target.closest('.delete-btn'); if (!button) return; const id = button.dataset.id; if (button.classList.contains('delete-user-btn')) { if (confirm('Delete user data?')) { await db.collection('users').doc(id).delete(); loadUsersAndStats(); } } else if (button.classList.contains('delete-task-btn')) { if (confirm('Delete task?')) { await db.collection('tasks').doc(id).delete(); loadTasks(); } } });
+        async function loadUsersAndStats() { const snapshot = await db.collection('users').get(); let totalUsers = 0, totalBalance = 0, userListHtml = ''; snapshot.forEach(doc => { totalUsers++; const user = doc.data(); totalBalance += user.balance || 0; userListHtml += `<div class="glass-card card-item"><div class="card-info"><p><strong>User:</strong> ${user.username}</p><p><strong>Email:</strong> ${user.email}</p><p><strong>Balance:</strong> $${(user.balance || 0).toFixed(2)}</p></div><div class="card-actions"><button class="delete-btn delete-user-btn" data-id="${doc.id}"><i class="fas fa-trash-alt"></i> Delete</button></div></div>`; }); totalUsersStat.textContent = totalUsers; totalBalanceStat.textContent = `$${totalBalance.toFixed(2)}`; userListContainer.innerHTML = userListHtml || '<div class="glass-card"><p>No users found.</p></div>'; }
+    });
+    </script>
+</body>
+</html>

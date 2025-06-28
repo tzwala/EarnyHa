@@ -114,10 +114,10 @@
             <!-- Main App UI -->
             <header class="app-header hidden"><h1>EarnyHA</h1><i class="fa-solid fa-right-from-bracket" style="font-size: 24px; cursor: pointer;" id="logout-button"></i></header>
             <main id="main-content" class="hidden">
-                <div id="home-screen" class="content-screen"><div class="glass-card balance-card"><h2>Your Current Balance</h2><p class="balance-amount"><sup>$</sup><span id="balance-display">0.00</span></p></div><div class="actions-grid"><div class="action-button" onclick="showScreen('tasks')"><i class="fa-solid fa-list-check"></i><p>Earn Now</p></div><div class="action-button" onclick="showScreen('withdraw')"><i class="fa-solid fa-wallet"></i><p>Withdraw</p></div></div></div>
+                <div id="home-screen" class="content-screen"><div class="glass-card balance-card"><h2>Your Current Balance</h2><p class="balance-amount"><sup>₹</sup><span id="balance-display">0.00</span></p></div><div class="actions-grid"><div class="action-button" onclick="showScreen('tasks')"><i class="fa-solid fa-list-check"></i><p>Earn Now</p></div><div class="action-button" onclick="showScreen('withdraw')"><i class="fa-solid fa-wallet"></i><p>Withdraw</p></div></div></div>
                 <div id="tasks-screen" class="content-screen hidden"><h2 class="screen-title">Complete Tasks to Earn</h2><div id="task-list"></div></div>
-                <div id="withdraw-screen" class="content-screen hidden"><h2 class="screen-title">Withdraw Funds</h2><div class="glass-card"><div class="form-group"><label for="withdraw-amount">Amount ($)</label><input type="number" id="withdraw-amount" placeholder="e.g., 10.50"></div><div class="form-group"><label for="paypal-email">PayPal Email</label><input type="email" id="paypal-email" placeholder="youremail@example.com"></div><button id="withdraw-button" class="btn-primary">Request Withdrawal</button></div></div>
-                <div id="profile-screen" class="content-screen hidden"><h2 class="screen-title">My Profile</h2><div class="glass-card profile-info"><p>Username: <span id="profile-username"></span></p><p>Email: <span id="profile-email"></span></p><p>Total Earned: <span>$<span id="profile-total-earned"></span></span></p></div></div>
+                <div id="withdraw-screen" class="content-screen hidden"><h2 class="screen-title">Withdraw Funds</h2><div class="glass-card"><div class="form-group"><label for="withdraw-amount">Amount (₹)</label><input type="number" id="withdraw-amount" placeholder="e.g., 500.00"></div><div class="form-group"><label for="upi-id">UPI ID</label><input type="text" id="upi-id" placeholder="yourname@bank"></div><button id="withdraw-button" class="btn-primary">Request Withdrawal</button></div></div>
+                <div id="profile-screen" class="content-screen hidden"><h2 class="screen-title">My Profile</h2><div class="glass-card profile-info"><p>Username: <span id="profile-username"></span></p><p>Email: <span id="profile-email"></span></p><p>Total Earned: <span>₹<span id="profile-total-earned"></span></span></p></div></div>
             </main>
             <nav class="bottom-nav glass-card hidden">
                 <button class="nav-button active" data-screen="home"><i class="fa-solid fa-house"></i>Home</button><button class="nav-button" data-screen="tasks"><i class="fa-solid fa-rocket"></i>Tasks</button><button class="nav-button" data-screen="withdraw"><i class="fa-solid fa-money-bill-transfer"></i>Withdraw</button><button class="nav-button" data-screen="profile"><i class="fa-solid fa-user"></i>Profile</button>
@@ -151,7 +151,7 @@
         // --- 3. DOM Selectors ---
         const loginEmailInput = document.getElementById('login-email-input'), loginPasswordInput = document.getElementById('login-password-input'), registerUsernameInput = document.getElementById('register-username-input'), registerEmailInput = document.getElementById('register-email-input'), registerPasswordInput = document.getElementById('register-password-input'), registerConfirmPasswordInput = document.getElementById('register-confirm-password-input'), balanceDisplay = document.getElementById('balance-display'), taskListContainer = document.getElementById('task-list'), profileUsername = document.getElementById('profile-username'), profileEmail = document.getElementById('profile-email'), profileTotalEarned = document.getElementById('profile-total-earned');
         const authContainer = document.getElementById('auth-container'), appHeader = document.querySelector('.app-header'), mainContent = document.getElementById('main-content'), bottomNav = document.querySelector('.bottom-nav');
-        const withdrawButton = document.getElementById('withdraw-button'), withdrawAmountInput = document.getElementById('withdraw-amount'), paypalEmailInput = document.getElementById('paypal-email');
+        const withdrawButton = document.getElementById('withdraw-button'), withdrawAmountInput = document.getElementById('withdraw-amount'), upiIdInput = document.getElementById('upi-id');
 
         // --- 4. Core App Logic (Firebase Auth & Data Fetching) ---
         auth.onAuthStateChanged(user => {
@@ -202,7 +202,7 @@
                     <div class="task-item-content">
                         <h4>${task.name}</h4>
                         <p class="task-description">${task.description}</p>
-                        <p class="task-reward">+ $${task.reward.toFixed(2)}</p>
+                        <p class="task-reward">+ ₹${task.reward.toFixed(2)}</p>
                         <button class="task-button" data-task-id="${task.id}" ${isCompleted ? 'disabled' : ''}>
                             ${isCompleted ? 'Completed' : 'Complete Task'}
                         </button>
@@ -235,7 +235,7 @@
                             completedTasks: firebase.firestore.FieldValue.arrayUnion(task.id)
                         });
                     });
-                    showToast(`+ $${task.reward.toFixed(2)} added!`);
+                    showToast(`+ ₹${task.reward.toFixed(2)} added!`);
                 } catch (error) {
                     showToast("Error: " + error);
                     button.disabled = false;
@@ -246,26 +246,37 @@
 
         async function handleWithdrawal() {
             const amount = parseFloat(withdrawAmountInput.value);
-            const paypal = paypalEmailInput.value.trim();
+            const upiId = upiIdInput.value.trim();
             if (isNaN(amount) || amount <= 0) { showToast("Please enter a valid amount."); return; }
-            if (!paypal || !paypal.includes('@')) { showToast("Please enter a valid PayPal email."); return; }
+            if (!upiId || !upiId.includes('@')) { showToast("Please enter a valid UPI ID (e.g., yourname@bank)."); return; }
             if (!currentUser) { showToast("You must be logged in."); return; }
+            
             withdrawButton.disabled = true;
             withdrawButton.textContent = "Processing...";
+            
             const userRef = db.collection('users').doc(currentUser.uid);
             const withdrawalRef = db.collection('withdrawals').doc();
+            
             try {
                 await db.runTransaction(async (transaction) => {
                     const userDoc = await transaction.get(userRef);
                     if (!userDoc.exists) throw "User document not found!";
                     const currentBalance = userDoc.data().balance;
                     if (currentBalance < amount) throw "Insufficient balance for this withdrawal.";
+                    
                     transaction.update(userRef, { balance: firebase.firestore.FieldValue.increment(-amount) });
-                    transaction.set(withdrawalRef, { userId: currentUser.uid, username: userDoc.data().username, amount: amount, paypalEmail: paypal, status: "pending", requestedAt: firebase.firestore.FieldValue.serverTimestamp() });
+                    transaction.set(withdrawalRef, { 
+                        userId: currentUser.uid, 
+                        username: userDoc.data().username, 
+                        amount: amount, 
+                        upiId: upiId, 
+                        status: "pending", 
+                        requestedAt: firebase.firestore.FieldValue.serverTimestamp() 
+                    });
                 });
                 showToast("Withdrawal request submitted successfully!");
                 withdrawAmountInput.value = '';
-                paypalEmailInput.value = '';
+                upiIdInput.value = '';
             } catch (error) {
                 showToast("Error: " + error);
             } finally {

@@ -62,7 +62,7 @@
         /* --- 4. Glassmorphism Card & Common Elements --- */
         .glass-card { background: var(--glass-bg); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid var(--glass-border); border-radius: 20px; padding: 20px; box-shadow: 0 8px 32px 0 var(--shadow-color); margin-bottom: 20px; }
         .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; margin-bottom: 8px; opacity: 0.8; }
+        .form-group label { display: block; margin-bottom: 8px; opacity: 0.8; text-align: left;}
         .form-group input { width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--text-light); font-size: 16px; }
         .btn-primary { width: 100%; padding: 15px; border: none; border-radius: 15px; font-size: 18px; font-weight: 600; cursor: pointer; background: linear-gradient(45deg, var(--primary-color), var(--secondary-color)); color: var(--text-dark); transition: all 0.3s ease; }
         .btn-primary:hover { box-shadow: 0 0 20px var(--secondary-color); }
@@ -79,7 +79,6 @@
         .profile-info p { font-size: 18px; margin-bottom: 10px; }
         .profile-info span { font-weight: 700; color: var(--primary-color); }
         
-        /* UPDATED Task Card Styles */
         .task-item { display: flex; padding: 15px; gap: 15px; }
         .task-item-image { width: 80px; height: 80px; object-fit: cover; border-radius: 15px; flex-shrink: 0; }
         .task-item-content { flex-grow: 1; display: flex; flex-direction: column; }
@@ -152,6 +151,7 @@
         // --- 3. DOM Selectors ---
         const loginEmailInput = document.getElementById('login-email-input'), loginPasswordInput = document.getElementById('login-password-input'), registerUsernameInput = document.getElementById('register-username-input'), registerEmailInput = document.getElementById('register-email-input'), registerPasswordInput = document.getElementById('register-password-input'), registerConfirmPasswordInput = document.getElementById('register-confirm-password-input'), balanceDisplay = document.getElementById('balance-display'), taskListContainer = document.getElementById('task-list'), profileUsername = document.getElementById('profile-username'), profileEmail = document.getElementById('profile-email'), profileTotalEarned = document.getElementById('profile-total-earned');
         const authContainer = document.getElementById('auth-container'), appHeader = document.querySelector('.app-header'), mainContent = document.getElementById('main-content'), bottomNav = document.querySelector('.bottom-nav');
+        const withdrawButton = document.getElementById('withdraw-button'), withdrawAmountInput = document.getElementById('withdraw-amount'), paypalEmailInput = document.getElementById('paypal-email');
 
         // --- 4. Core App Logic (Firebase Auth & Data Fetching) ---
         auth.onAuthStateChanged(user => {
@@ -243,6 +243,37 @@
                 }
             }, 3000); // 3-second delay
         }
+
+        async function handleWithdrawal() {
+            const amount = parseFloat(withdrawAmountInput.value);
+            const paypal = paypalEmailInput.value.trim();
+            if (isNaN(amount) || amount <= 0) { showToast("Please enter a valid amount."); return; }
+            if (!paypal || !paypal.includes('@')) { showToast("Please enter a valid PayPal email."); return; }
+            if (!currentUser) { showToast("You must be logged in."); return; }
+            withdrawButton.disabled = true;
+            withdrawButton.textContent = "Processing...";
+            const userRef = db.collection('users').doc(currentUser.uid);
+            const withdrawalRef = db.collection('withdrawals').doc();
+            try {
+                await db.runTransaction(async (transaction) => {
+                    const userDoc = await transaction.get(userRef);
+                    if (!userDoc.exists) throw "User document not found!";
+                    const currentBalance = userDoc.data().balance;
+                    if (currentBalance < amount) throw "Insufficient balance for this withdrawal.";
+                    transaction.update(userRef, { balance: firebase.firestore.FieldValue.increment(-amount) });
+                    transaction.set(withdrawalRef, { userId: currentUser.uid, username: userDoc.data().username, amount: amount, paypalEmail: paypal, status: "pending", requestedAt: firebase.firestore.FieldValue.serverTimestamp() });
+                });
+                showToast("Withdrawal request submitted successfully!");
+                withdrawAmountInput.value = '';
+                paypalEmailInput.value = '';
+            } catch (error) {
+                showToast("Error: " + error);
+            } finally {
+                withdrawButton.disabled = false;
+                withdrawButton.textContent = "Request Withdrawal";
+            }
+        }
+        withdrawButton.addEventListener('click', handleWithdrawal);
 
         async function handleRegistration() {
             const username = registerUsernameInput.value.trim();

@@ -7,7 +7,7 @@
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
@@ -98,6 +98,24 @@
                         <h3>Existing Tasks</h3>
                         <div id="task-list-container"></div>
                     </div>
+                    <div id="games-screen" class="screen hidden">
+                        <div class="glass-card">
+                            <h3 id="game-form-title">Add New Game</h3>
+                            <div class="form-group" style="margin-top: 20px;"><label for="game-name">Game Name (Title)</label><input type="text" id="game-name"></div>
+                            <div class="form-group"><label for="game-description">Game Description</label><input type="text" id="game-description"></div>
+                            <div class="form-group"><label for="game-image-url">Game Image URL</label><input type="url" id="game-image-url"></div>
+                            <div class="form-group"><label for="game-url">Game URL (Link)</label><input type="url" id="game-url"></div>
+                            <!-- NEW FIELD FOR PER-MINUTE REWARD -->
+                            <div class="form-group">
+                                <label for="game-reward-per-minute">Reward per Minute (₹)</label>
+                                <input type="number" id="game-reward-per-minute" step="0.01" placeholder="e.g., 10 (or leave empty for no reward)">
+                            </div>
+                            <button id="game-submit-button" class="btn-primary">Add Game</button>
+                            <button id="cancel-game-edit-button" class="btn-secondary hidden">Cancel Edit</button>
+                        </div>
+                        <h3>Existing Games</h3>
+                        <div id="game-list-container"></div>
+                    </div>
                     <div id="withdrawals-screen" class="screen hidden">
                         <div class="tab-buttons">
                             <button class="tab-btn active" data-tab="pending">Pending</button>
@@ -111,137 +129,209 @@
                     <button class="nav-button active" data-screen="dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</button>
                     <button class="nav-button" data-screen="users"><i class="fas fa-users"></i> Users</button>
                     <button class="nav-button" data-screen="tasks"><i class="fas fa-tasks"></i> Tasks</button>
+                    <button class="nav-button" data-screen="games"><i class="fas fa-gamepad"></i> Games</button>
                     <button class="nav-button" data-screen="withdrawals"><i class="fas fa-hand-holding-usd"></i> Withdrawals</button>
                 </nav>
             </div>
         </div>
     </div>
-    <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const firebaseConfig = {
-  apiKey: "AIzaSyAvOCamAwrk7yg-I6RVuMfzE_vKbZlAwwo",
-  authDomain: "earnyha-app.firebaseapp.com",
-  projectId: "earnyha-app",
-  storageBucket: "earnyha-app.firebasestorage.app",
-  messagingSenderId: "117222358496",
-  appId: "1:117222358496:web:40ef494c898fea61ebff85",
-  measurementId: "G-ME6C5D883Z"
-};
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        const auth = firebase.auth();
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- Firebase Configuration ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyAvOCamAwrk7yg-I6RVuMfzE_vKbZlAwwo",
+      authDomain: "earnyha-app.firebaseapp.com",
+      projectId: "earnyha-app",
+      storageBucket: "earnyha-app.firebasestorage.app",
+      messagingSenderId: "117222358496",
+      appId: "1:117222358496:web:40ef494c898fea61ebff85",
+      measurementId: "G-ME6C5D883Z"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
 
-        let editingTaskId = null;
-        const loader = document.getElementById('loader'), loginScreen = document.getElementById('admin-login-screen'), mainAppUI = document.getElementById('main-app-ui'), loginButton = document.getElementById('admin-login-button'), passwordInput = document.getElementById('admin-password'), adminEmailInput = document.getElementById('admin-email'), logoutButton = document.getElementById('admin-logout-button'), headerTitle = document.getElementById('header-title'), totalUsersStat = document.getElementById('total-users-stat'), totalBalanceStat = document.getElementById('total-balance-stat'), userListContainer = document.getElementById('user-list-container'), navButtons = document.querySelectorAll('.nav-button'), screens = document.querySelectorAll('.screen'), taskListContainer = document.getElementById('task-list-container'), taskSubmitButton = document.getElementById('task-submit-button'), taskFormTitle = document.getElementById('task-form-title'), cancelEditButton = document.getElementById('cancel-edit-button'), taskNameInput = document.getElementById('task-name'), taskDescriptionInput = document.getElementById('task-description'), taskImageUrlInput = document.getElementById('task-image-url'), taskButtonUrlInput = document.getElementById('task-button-url'), taskRewardInput = document.getElementById('task-reward'), withdrawalTabs = document.querySelector('.tab-buttons'), pendingWithdrawalsContainer = document.getElementById('pending-withdrawals'), historyWithdrawalsContainer = document.getElementById('history-withdrawals');
+    // --- State Variables ---
+    let editingTaskId = null;
+    let editingGameId = null; 
 
-        const ADMIN_ACCOUNT_EMAIL = "admin@earnyha.com";
-        const screenTitles = { dashboard: 'Dashboard', users: 'User Management', tasks: 'Task Management', withdrawals: 'Withdrawals' };
-        
-        async function handleAdminLogin() {
-            const email = adminEmailInput.value.trim(); const password = passwordInput.value;
-            if (!email || !password) { alert("Please enter email and password."); return; }
-            const button = loginButton; button.disabled = true; button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            try {
-                const cred = await auth.signInWithEmailAndPassword(email, password);
-                if (cred.user.email !== ADMIN_ACCOUNT_EMAIL) { await auth.signOut(); alert("Access Denied: Not an admin account."); return; }
-                loginScreen.classList.add('hidden'); mainAppUI.classList.remove('hidden');
-                loadAllAdminData();
-            } catch (error) { alert("Login Failed: " + error.message); } 
-            finally { button.disabled = false; button.textContent = "Access Panel"; }
-        }
-        
-        async function handleAdminLogout() { try { await auth.signOut(); passwordInput.value = ''; adminEmailInput.value = 'admin@earnyha.com'; mainAppUI.classList.add('hidden'); loginScreen.classList.remove('hidden'); cancelEdit(); } catch(error) { alert("Logout failed: " + error.message); } }
-        loginButton.addEventListener('click', handleAdminLogin);
-        passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleAdminLogin(); });
-        logoutButton.addEventListener('click', handleAdminLogout);
-        function showScreen(screenId) { screens.forEach(s => s.classList.add('hidden')); document.getElementById(`${screenId}-screen`).classList.remove('hidden'); navButtons.forEach(b => b.classList.toggle('active', b.dataset.screen === screenId)); headerTitle.textContent = screenTitles[screenId] || 'Admin'; }
-        navButtons.forEach(button => button.addEventListener('click', () => showScreen(button.dataset.screen)));
-        loader.style.opacity = '0'; setTimeout(() => loader.classList.add('hidden'), 500);
+    // --- Element Selectors ---
+    const loader = document.getElementById('loader'), loginScreen = document.getElementById('admin-login-screen'), mainAppUI = document.getElementById('main-app-ui'), loginButton = document.getElementById('admin-login-button'), passwordInput = document.getElementById('admin-password'), adminEmailInput = document.getElementById('admin-email'), logoutButton = document.getElementById('admin-logout-button'), headerTitle = document.getElementById('header-title'), totalUsersStat = document.getElementById('total-users-stat'), totalBalanceStat = document.getElementById('total-balance-stat'), userListContainer = document.getElementById('user-list-container'), navButtons = document.querySelectorAll('.nav-button'), screens = document.querySelectorAll('.screen'), taskListContainer = document.getElementById('task-list-container'), taskSubmitButton = document.getElementById('task-submit-button'), taskFormTitle = document.getElementById('task-form-title'), cancelEditButton = document.getElementById('cancel-edit-button'), taskNameInput = document.getElementById('task-name'), taskDescriptionInput = document.getElementById('task-description'), taskImageUrlInput = document.getElementById('task-image-url'), taskButtonUrlInput = document.getElementById('task-button-url'), taskRewardInput = document.getElementById('task-reward'), withdrawalTabs = document.querySelector('.tab-buttons'), pendingWithdrawalsContainer = document.getElementById('pending-withdrawals'), historyWithdrawalsContainer = document.getElementById('history-withdrawals');
+    
+    // Game Section Element Selectors
+    const gameListContainer = document.getElementById('game-list-container'), gameSubmitButton = document.getElementById('game-submit-button'), gameFormTitle = document.getElementById('game-form-title'), cancelGameEditButton = document.getElementById('cancel-game-edit-button'), gameNameInput = document.getElementById('game-name'), gameDescriptionInput = document.getElementById('game-description'), gameImageUrlInput = document.getElementById('game-image-url'), gameUrlInput = document.getElementById('game-url'),
+    gameRewardPerMinuteInput = document.getElementById('game-reward-per-minute');
 
-        function loadAllAdminData() { loadUsersAndStats(); loadTasks(); loadWithdrawals('pending'); }
-        async function loadUsersAndStats() {
-            const snapshot = await db.collection('users').get(); let totalUsers = 0, totalBalance = 0, userListHtml = '';
-            snapshot.forEach(doc => { totalUsers++; const user = doc.data(); totalBalance += user.balance || 0; userListHtml += `<div class="glass-card card-item"><div class="card-info"><p><strong>User:</strong> ${user.username}</p><p><strong>Balance:</strong> ₹${(user.balance || 0).toFixed(2)}</p></div><div class="card-actions"><button class="action-btn delete-btn delete-user-btn" data-id="${doc.id}"><i class="fas fa-trash-alt"></i></button></div></div>`; });
-            totalUsersStat.textContent = totalUsers; totalBalanceStat.textContent = `₹${totalBalance.toFixed(2)}`;
-            userListContainer.innerHTML = userListHtml || '<div class="glass-card" style="text-align:center;"><p>No users found.</p></div>';
+    // --- Constants ---
+    const ADMIN_ACCOUNT_EMAIL = "admin@earnyha.com";
+    const screenTitles = { dashboard: 'Dashboard', users: 'User Management', tasks: 'Task Management', games: 'Game Management', withdrawals: 'Withdrawals' };
+    
+    // --- Authentication ---
+    async function handleAdminLogin() {
+        const email = adminEmailInput.value.trim(); const password = passwordInput.value;
+        if (!email || !password) { alert("Please enter email and password."); return; }
+        const button = loginButton; button.disabled = true; button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        try {
+            const cred = await auth.signInWithEmailAndPassword(email, password);
+            if (cred.user.email !== ADMIN_ACCOUNT_EMAIL) { await auth.signOut(); alert("Access Denied: Not an admin account."); throw new Error("Not an admin.");}
+            loginScreen.classList.add('hidden'); mainAppUI.classList.remove('hidden');
+            loadAllAdminData();
+        } catch (error) { 
+            if (error.message !== "Not an admin.") alert("Login Failed: " + error.message);
+        } finally { 
+            button.disabled = false; button.textContent = "Access Panel"; 
         }
-        async function loadTasks() {
-            const snapshot = await db.collection('tasks').orderBy("createdAt", "desc").get(); let taskListHtml = '';
-            snapshot.forEach(doc => { const task = doc.data(); taskListHtml += `<div class="glass-card card-item"><img src="${task.imageUrl}" class="task-image-preview"><div class="card-info"><p><strong>Name:</strong> ${task.name}</p><p><strong>Reward:</strong> ₹${task.reward.toFixed(2)}</p></div><div class="card-actions"><button class="action-btn edit-btn" data-id="${doc.id}"><i class="fas fa-edit"></i></button><button class="action-btn delete-btn delete-task-btn" data-id="${doc.id}"><i class="fas fa-trash-alt"></i></button></div></div>`; });
-            taskListContainer.innerHTML = taskListHtml || '<div class="glass-card"><p>No tasks found.</p></div>';
-        }
-        async function loadWithdrawals(tab) {
-            let query;
-            if (tab === 'pending') { query = db.collection('withdrawals').where('status', '==', 'pending').orderBy('requestedAt', 'asc'); } 
-            else { query = db.collection('withdrawals').where('status', 'in', ['completed', 'rejected']).orderBy('requestedAt', 'desc').limit(20); }
-            try {
-                const snapshot = await query.get(); let html = '';
-                snapshot.forEach(doc => {
-                    const req = doc.data(); const reqDate = req.requestedAt ? req.requestedAt.toDate().toLocaleString() : 'N/A';
-                    const statusColor = req.status === 'completed' ? 'var(--success-color)' : req.status === 'rejected' ? 'var(--danger-color)' : 'var(--info-color)';
-                    html += `<div class="glass-card card-item"><div class="card-info"><p><strong>User:</strong> ${req.username}</p><p><strong>Amount:</strong> <strong style="color:var(--primary-color);">₹${req.amount.toFixed(2)}</strong></p><p><strong>To (UPI):</strong> ${req.upiId}</p><p><strong>Status:</strong> <strong style="color:${statusColor}; text-transform:capitalize;">${req.status}</strong></p><p><strong>Date:</strong> ${reqDate}</p></div>`;
-                    if (req.status === 'pending') { html += `<div class="card-actions"><button class="action-btn approve-btn" data-id="${doc.id}"><i class="fas fa-check"></i></button><button class="action-btn reject-btn" data-id="${doc.id}" data-user-id="${req.userId}" data-amount="${req.amount}"><i class="fas fa-times"></i></button></div>`; }
-                    html += `</div>`;
-                });
-                const container = tab === 'pending' ? pendingWithdrawalsContainer : historyWithdrawalsContainer;
-                container.innerHTML = html || `<div class="glass-card" style="text-align:center;"><p>No ${tab} requests found.</p></div>`;
-            } catch (error) {
-                console.error(`Error loading ${tab} withdrawals:`, error);
-                const container = tab === 'pending' ? pendingWithdrawalsContainer : historyWithdrawalsContainer;
-                container.innerHTML = `<div class="glass-card" style="text-align:center; color: var(--danger-color);"><p>Error loading data. A database index is likely missing. Please check the browser console for an error link to create it.</p></div>`;
-            }
-        }
+    }
+    
+    async function handleAdminLogout() { 
+        try { 
+            await auth.signOut(); 
+            passwordInput.value = ''; 
+            adminEmailInput.value = 'admin@earnyha.com'; 
+            mainAppUI.classList.add('hidden'); 
+            loginScreen.classList.remove('hidden'); 
+            cancelEdit(); 
+            cancelGameEdit(); 
+        } catch(error) { 
+            alert("Logout failed: " + error.message); 
+        } 
+    }
 
-        async function handleTaskFormSubmit() {
-            const taskData = { name: taskNameInput.value.trim(), description: taskDescriptionInput.value.trim(), imageUrl: taskImageUrlInput.value.trim(), buttonUrl: taskButtonUrlInput.value.trim(), reward: parseFloat(taskRewardInput.value) };
-            if (!taskData.name || !taskData.imageUrl || !taskData.buttonUrl || isNaN(taskData.reward) || taskData.reward <= 0) { alert("Please fill all required fields."); return; }
-            const button = taskSubmitButton; button.disabled = true; button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            try { if (editingTaskId) { await db.collection('tasks').doc(editingTaskId).update(taskData); alert('Task updated!'); } else { taskData.createdAt = firebase.firestore.FieldValue.serverTimestamp(); await db.collection('tasks').add(taskData); alert('Task added!'); } cancelEdit(); await loadTasks(); } catch (error) { alert('Failed to submit task.'); } finally { button.disabled = false; button.textContent = editingTaskId ? 'Save Changes' : 'Add Task'; }
-        }
-        taskSubmitButton.addEventListener('click', handleTaskFormSubmit);
-        
-        async function startEditTask(taskId) {
-            const doc = await db.collection('tasks').doc(taskId).get(); if (!doc.exists) { alert("Task not found!"); return; } const task = doc.data(); editingTaskId = taskId; taskNameInput.value = task.name; taskDescriptionInput.value = task.description || ''; taskImageUrlInput.value = task.imageUrl; taskButtonUrlInput.value = task.buttonUrl; taskRewardInput.value = task.reward; taskFormTitle.textContent = "Edit Task"; taskSubmitButton.textContent = "Save Changes"; cancelEditButton.classList.remove('hidden'); document.querySelector('#tasks-screen .glass-card').scrollIntoView({ behavior: 'smooth' });
-        }
-        function cancelEdit() { editingTaskId = null; [taskNameInput, taskDescriptionInput, taskImageUrlInput, taskButtonUrlInput, taskRewardInput].forEach(input => input.value = ''); taskFormTitle.textContent = "Add New Task"; taskSubmitButton.textContent = "Add Task"; cancelEditButton.classList.add('hidden'); }
-        cancelEditButton.addEventListener('click', cancelEdit);
+    // --- Navigation ---
+    function showScreen(screenId) { 
+        screens.forEach(s => s.classList.add('hidden')); 
+        document.getElementById(`${screenId}-screen`).classList.remove('hidden'); 
+        navButtons.forEach(b => b.classList.toggle('active', b.dataset.screen === screenId)); 
+        headerTitle.textContent = screenTitles[screenId] || 'Admin'; 
+    }
 
-        mainAppUI.addEventListener('click', async (e) => {
-            const button = e.target.closest('.action-btn'); if (!button) return;
-            const id = button.dataset.id;
-            const originalContent = button.innerHTML;
-            button.disabled = true; button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            try {
-                if (button.classList.contains('delete-user-btn')) { if (confirm('Delete user data? This cannot be undone.')) { await db.collection('users').doc(id).delete(); await loadUsersAndStats(); } } 
-                else if (button.classList.contains('delete-task-btn')) { if (confirm('Delete this task?')) { await db.collection('tasks').doc(id).delete(); await loadTasks(); } } 
-                else if (button.classList.contains('edit-btn')) { await startEditTask(id); } 
-                else if (button.classList.contains('approve-btn')) { if (confirm('Approve this withdrawal?')) { await db.collection('withdrawals').doc(id).update({ status: 'completed' }); await loadWithdrawals('pending'); } } 
-                else if (button.classList.contains('reject-btn')) {
-                    if (confirm('Reject withdrawal & refund user?')) {
-                        const userId = button.dataset.userId; const amount = parseFloat(button.dataset.amount);
-                        const userRef = db.collection('users').doc(userId); const withdrawalRef = db.collection('withdrawals').doc(id);
-                        await db.runTransaction(async t => { t.update(userRef, { balance: firebase.firestore.FieldValue.increment(amount) }); t.update(withdrawalRef, { status: 'rejected' }); });
-                        await loadWithdrawals('pending');
-                    }
-                }
-            } catch (error) { console.error("Action failed:", error); alert("An error occurred. Please check the console."); } finally { if(document.body.contains(button)) { button.disabled = false; button.innerHTML = originalContent; } }
+    // --- Data Loading ---
+    function loadAllAdminData() { 
+        loadUsersAndStats(); 
+        loadTasks(); 
+        loadGames(); 
+        loadWithdrawals('pending'); 
+    }
+    async function loadUsersAndStats() {
+        const snapshot = await db.collection('users').get(); 
+        let totalUsers = 0, totalBalance = 0, userListHtml = '';
+        snapshot.forEach(doc => { totalUsers++; const user = doc.data(); totalBalance += user.balance || 0; userListHtml += `<div class="glass-card card-item"><div class="card-info"><p><strong>User:</strong> ${user.username || 'N/A'}</p><p><strong>Email:</strong> ${doc.data().email || doc.id}</p><p><strong>Balance:</strong> ₹${(user.balance || 0).toFixed(2)}</p></div><div class="card-actions"><button class="action-btn delete-btn delete-user-btn" data-id="${doc.id}"><i class="fas fa-trash-alt"></i></button></div></div>`; });
+        totalUsersStat.textContent = totalUsers; totalBalanceStat.textContent = `₹${totalBalance.toFixed(2)}`;
+        userListContainer.innerHTML = userListHtml || '<div class="glass-card" style="text-align:center;"><p>No users found.</p></div>';
+    }
+    async function loadTasks() {
+        const snapshot = await db.collection('tasks').orderBy("createdAt", "desc").get(); 
+        let taskListHtml = '';
+        snapshot.forEach(doc => { const task = doc.data(); taskListHtml += `<div class="glass-card card-item"><img src="${task.imageUrl}" class="task-image-preview"><div class="card-info"><p><strong>Name:</strong> ${task.name}</p><p><strong>Reward:</strong> ₹${task.reward.toFixed(2)}</p></div><div class="card-actions"><button class="action-btn edit-btn edit-task-btn" data-id="${doc.id}"><i class="fas fa-edit"></i></button><button class="action-btn delete-btn delete-task-btn" data-id="${doc.id}"><i class="fas fa-trash-alt"></i></button></div></div>`; });
+        taskListContainer.innerHTML = taskListHtml || '<div class="glass-card"><p>No tasks found.</p></div>';
+    }
+    async function loadGames() {
+        const snapshot = await db.collection('games').orderBy("createdAt", "desc").get(); let gameListHtml = '';
+        snapshot.forEach(doc => {
+            const game = doc.data();
+            const rewardText = game.rewardPerMinute > 0 ? `<p><strong>Reward/Min:</strong> ₹${game.rewardPerMinute.toFixed(2)}</p>` : '';
+            gameListHtml += `<div class="glass-card card-item"><img src="${game.imageUrl}" class="task-image-preview"><div class="card-info"><p><strong>Name:</strong> ${game.name}</p>${rewardText}</div><div class="card-actions"><button class="action-btn edit-btn edit-game-btn" data-id="${doc.id}"><i class="fas fa-edit"></i></button><button class="action-btn delete-btn delete-game-btn" data-id="${doc.id}"><i class="fas fa-trash-alt"></i></button></div></div>`;
         });
-        
-        withdrawalTabs.addEventListener('click', (e) => {
-            if (e.target.classList.contains('tab-btn')) {
-                const tab = e.target.dataset.tab;
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                e.target.classList.add('active');
-                if (tab === 'pending') {
-                    pendingWithdrawalsContainer.classList.remove('hidden'); historyWithdrawalsContainer.classList.add('hidden');
-                    loadWithdrawals('pending');
-                } else {
-                    pendingWithdrawalsContainer.classList.add('hidden'); historyWithdrawalsContainer.classList.remove('hidden');
-                    loadWithdrawals('history');
+        gameListContainer.innerHTML = gameListHtml || '<div class="glass-card" style="text-align:center;"><p>No games found.</p></div>';
+    }
+    async function loadWithdrawals(tab) {
+        let query;
+        if (tab === 'pending') { query = db.collection('withdrawals').where('status', '==', 'pending').orderBy('requestedAt', 'asc'); } 
+        else { query = db.collection('withdrawals').where('status', 'in', ['completed', 'rejected']).orderBy('requestedAt', 'desc').limit(20); }
+        try {
+            const snapshot = await query.get(); let html = '';
+            snapshot.forEach(doc => {
+                const req = doc.data(); const reqDate = req.requestedAt ? req.requestedAt.toDate().toLocaleString() : 'N/A';
+                const statusColor = req.status === 'completed' ? 'var(--success-color)' : req.status === 'rejected' ? 'var(--danger-color)' : 'var(--info-color)';
+                html += `<div class="glass-card card-item"><div class="card-info"><p><strong>User:</strong> ${req.username}</p><p><strong>Amount:</strong> <strong style="color:var(--primary-color);">₹${req.amount.toFixed(2)}</strong></p><p><strong>To (UPI):</strong> ${req.upiId}</p><p><strong>Status:</strong> <strong style="color:${statusColor}; text-transform:capitalize;">${req.status}</strong></p><p><strong>Date:</strong> ${reqDate}</p></div>`;
+                if (req.status === 'pending') { html += `<div class="card-actions"><button class="action-btn approve-btn" data-id="${doc.id}"><i class="fas fa-check"></i></button><button class="action-btn reject-btn" data-id="${doc.id}" data-user-id="${req.userId}" data-amount="${req.amount}"><i class="fas fa-times"></i></button></div>`; }
+                html += `</div>`;
+            });
+            const container = tab === 'pending' ? pendingWithdrawalsContainer : historyWithdrawalsContainer;
+            container.innerHTML = html || `<div class="glass-card" style="text-align:center;"><p>No ${tab} requests found.</p></div>`;
+        } catch (error) {
+            console.error(`Error loading ${tab} withdrawals:`, error);
+            const container = tab === 'pending' ? pendingWithdrawalsContainer : historyWithdrawalsContainer;
+            container.innerHTML = `<div class="glass-card" style="text-align:center; color: var(--danger-color);"><p>Error loading data. A database index is likely missing. Please check the browser console for an error link to create it.</p></div>`;
+        }
+    }
+
+    // --- Form Handling ---
+    async function handleTaskFormSubmit() {
+        const taskData = { name: taskNameInput.value.trim(), description: taskDescriptionInput.value.trim(), imageUrl: taskImageUrlInput.value.trim(), buttonUrl: taskButtonUrlInput.value.trim(), reward: parseFloat(taskRewardInput.value) };
+        if (!taskData.name || !taskData.imageUrl || !taskData.buttonUrl || isNaN(taskData.reward) || taskData.reward <= 0) { alert("Please fill all required fields."); return; }
+        const button = taskSubmitButton; button.disabled = true; button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        try { if (editingTaskId) { await db.collection('tasks').doc(editingTaskId).update(taskData); alert('Task updated!'); } else { taskData.createdAt = firebase.firestore.FieldValue.serverTimestamp(); await db.collection('tasks').add(taskData); alert('Task added!'); } cancelEdit(); await loadTasks(); } catch (error) { alert('Failed to submit task.'); } finally { button.disabled = false; button.textContent = editingTaskId ? 'Save Changes' : 'Add Task'; }
+    }
+    async function handleGameFormSubmit() {
+        const gameData = { name: gameNameInput.value.trim(), description: gameDescriptionInput.value.trim(), imageUrl: gameImageUrlInput.value.trim(), gameUrl: gameUrlInput.value.trim(), rewardPerMinute: parseFloat(gameRewardPerMinuteInput.value) || 0 };
+        if (!gameData.name || !gameData.imageUrl || !gameData.gameUrl) { alert("Please fill all required fields (Name, Image URL, Game URL)."); return; }
+        const button = gameSubmitButton; button.disabled = true; button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        try { if (editingGameId) { await db.collection('games').doc(editingGameId).update(gameData); alert('Game updated!'); } else { gameData.createdAt = firebase.firestore.FieldValue.serverTimestamp(); await db.collection('games').add(gameData); alert('Game added!'); } cancelGameEdit(); await loadGames(); } catch (error) { alert('Failed to submit game.'); console.error(error); } finally { button.disabled = false; button.textContent = editingGameId ? 'Save Changes' : 'Add Game'; }
+    }
+
+    // --- Editing ---
+    async function startEditTask(taskId) {
+        const doc = await db.collection('tasks').doc(taskId).get(); if (!doc.exists) { alert("Task not found!"); return; } const task = doc.data(); editingTaskId = taskId; taskNameInput.value = task.name; taskDescriptionInput.value = task.description || ''; taskImageUrlInput.value = task.imageUrl; taskButtonUrlInput.value = task.buttonUrl; taskRewardInput.value = task.reward; taskFormTitle.textContent = "Edit Task"; taskSubmitButton.textContent = "Save Changes"; cancelEditButton.classList.remove('hidden'); document.querySelector('#tasks-screen .glass-card').scrollIntoView({ behavior: 'smooth' });
+    }
+    function cancelEdit() { editingTaskId = null; [taskNameInput, taskDescriptionInput, taskImageUrlInput, taskButtonUrlInput, taskRewardInput].forEach(input => input.value = ''); taskFormTitle.textContent = "Add New Task"; taskSubmitButton.textContent = "Add Task"; cancelEditButton.classList.add('hidden'); }
+    async function startEditGame(gameId) {
+        const doc = await db.collection('games').doc(gameId).get(); if (!doc.exists) { alert("Game not found!"); return; } const game = doc.data(); editingGameId = gameId; gameNameInput.value = game.name; gameDescriptionInput.value = game.description || ''; gameImageUrlInput.value = game.imageUrl; gameUrlInput.value = game.gameUrl; gameRewardPerMinuteInput.value = game.rewardPerMinute || ''; gameFormTitle.textContent = "Edit Game"; gameSubmitButton.textContent = "Save Changes"; cancelGameEditButton.classList.remove('hidden'); document.querySelector('#games-screen .glass-card').scrollIntoView({ behavior: 'smooth' });
+    }
+    function cancelGameEdit() { editingGameId = null; [gameNameInput, gameDescriptionInput, gameImageUrlInput, gameUrlInput, gameRewardPerMinuteInput].forEach(input => input.value = ''); gameFormTitle.textContent = "Add New Game"; gameSubmitButton.textContent = "Add Game"; cancelGameEditButton.classList.add('hidden'); }
+
+    // --- Event Listeners ---
+    loginButton.addEventListener('click', handleAdminLogin);
+    passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleAdminLogin(); });
+    logoutButton.addEventListener('click', handleAdminLogout);
+    navButtons.forEach(button => button.addEventListener('click', () => showScreen(button.dataset.screen)));
+    taskSubmitButton.addEventListener('click', handleTaskFormSubmit);
+    cancelEditButton.addEventListener('click', cancelEdit);
+    gameSubmitButton.addEventListener('click', handleGameFormSubmit);
+    cancelGameEditButton.addEventListener('click', cancelGameEdit);
+
+    mainAppUI.addEventListener('click', async (e) => {
+        const button = e.target.closest('.action-btn'); if (!button) return;
+        const id = button.dataset.id;
+        const originalContent = button.innerHTML;
+        button.disabled = true; button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        try {
+            if (button.classList.contains('delete-user-btn')) { if (confirm('Delete user data? This cannot be undone.')) { await db.collection('users').doc(id).delete(); await loadUsersAndStats(); } } 
+            else if (button.classList.contains('delete-task-btn')) { if (confirm('Delete this task?')) { await db.collection('tasks').doc(id).delete(); await loadTasks(); } } 
+            else if (button.classList.contains('delete-game-btn')) { if (confirm('Delete this game?')) { await db.collection('games').doc(id).delete(); await loadGames(); } } 
+            else if (button.classList.contains('edit-task-btn')) { await startEditTask(id); } 
+            else if (button.classList.contains('edit-game-btn')) { await startEditGame(id); } 
+            else if (button.classList.contains('approve-btn')) { if (confirm('Approve this withdrawal?')) { await db.collection('withdrawals').doc(id).update({ status: 'completed' }); await loadWithdrawals('pending'); } } 
+            else if (button.classList.contains('reject-btn')) {
+                if (confirm('Reject withdrawal & refund user?')) {
+                    const userId = button.dataset.userId; const amount = parseFloat(button.dataset.amount);
+                    const userRef = db.collection('users').doc(userId); const withdrawalRef = db.collection('withdrawals').doc(id);
+                    await db.runTransaction(async t => { t.update(userRef, { balance: firebase.firestore.FieldValue.increment(amount) }); t.update(withdrawalRef, { status: 'rejected' }); });
+                    await loadWithdrawals('pending');
                 }
             }
-        });
+        } catch (error) { console.error("Action failed:", error); alert("An error occurred. Please check the console."); } finally { if(document.body.contains(button)) { button.disabled = false; button.innerHTML = originalContent; } }
     });
-    </script>
+    
+    withdrawalTabs.addEventListener('click', (e) => {
+        if (e.target.classList.contains('tab-btn')) {
+            const tab = e.target.dataset.tab;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            if (tab === 'pending') {
+                pendingWithdrawalsContainer.classList.remove('hidden'); historyWithdrawalsContainer.classList.add('hidden');
+                loadWithdrawals('pending');
+            } else {
+                pendingWithdrawalsContainer.classList.add('hidden'); historyWithdrawalsContainer.classList.remove('hidden');
+                loadWithdrawals('history');
+            }
+        }
+    });
+
+    // --- Initial Load ---
+    loader.style.opacity = '0'; 
+    setTimeout(() => loader.classList.add('hidden'), 500);
+});
+</script>
 </body>
 </html>

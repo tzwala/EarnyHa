@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EarnyHA - Earn Rewards</title>
+
+  
+    <!-- External Libraries -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDKs (Compatibility Version for single-file projects) -->
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        /* --- 1. Global & Setup CSS --- */
+        :root {
+            --primary-color: #00ffc3;
+            --secondary-color: #a972ff;
+            --background-dark: #1a1a2e;
+            --text-light: #e0e0e0;
+            --text-dark: #333;
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --shadow-color: rgba(31, 38, 135, 0.37);
+            --status-pending: #fdd835;
+            --status-completed: #66bb6a;
+            --status-failed: #ef5350;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #161623; color: var(--text-light); }
+
+        /* --- 2. Mobile App Container & Background --- */
+        .mobile-container { width: 375px; height: 812px; background: var(--background-dark); border-radius: 40px; box-shadow: 0 15px 50px rgba(0,0,0,0.5); overflow: hidden; position: relative; display: flex; flex-direction: column; }
+        .background-shapes { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        .background-shapes .shape { position: absolute; border-radius: 50%; filter: blur(2px); animation: move 20s linear infinite; }
+        .background-shapes .shape1 { width: 250px; height: 250px; background: var(--primary-color); top: -50px; left: -80px; animation-duration: 25s; }
+        .background-shapes .shape2 { width: 200px; height: 200px; background: var(--secondary-color); bottom: -50px; right: -60px; animation-duration: 20s; }
+        .background-shapes .shape3 { width: 150px; height: 150px; background: #ff57a4; bottom: 200px; left: -40px; animation-duration: 30s; }
+        @keyframes move { 0% { transform: translateY(0) translateX(0) rotate(0deg); } 50% { transform: translateY(50px) translateX(-50px) rotate(180deg); } 100% { transform: translateY(0) translateX(0) rotate(360deg); } }
+
+        /* --- 3. App Structure (Auth, Main App UI) --- */
+        .app-screen-wrapper { position: relative; z-index: 2; height: 100%; display: flex; flex-direction: column; }
+        .auth-screen { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; height: 100%; position: absolute; width: 100%; transition: opacity 0.3s ease, visibility 0.3s; }
+        .auth-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        .auth-card { width: 100%; text-align: center; }
+        .auth-card h1 { font-size: 40px; font-weight: 700; color: white; margin-bottom: 10px; }
+        .auth-card p { margin-bottom: 30px; opacity: 0.8; }
+        .form-switcher { margin-top: 20px; font-size: 14px; opacity: 0.8; }
+        .form-switcher span { font-weight: 600; color: var(--primary-color); cursor: pointer; text-decoration: underline; }
+        
+        .app-header { padding: 25px 20px 15px; display: flex; justify-content: space-between; align-items: center; }
+        .app-header h1 { font-size: 24px; font-weight: 700; color: white; text-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        #main-content { flex-grow: 1; padding: 0 20px 20px; overflow-y: auto; scrollbar-width: none; }
+        #main-content::-webkit-scrollbar { display: none; }
+        .bottom-nav { display: flex; padding: 10px 0; margin: 0 20px 10px; border-radius: 25px; }
+        .nav-button { flex: 1; background: none; border: none; color: var(--text-light); display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 8px 0; transition: all 0.3s ease; font-size: 12px; }
+        .nav-button i { font-size: 22px; margin-bottom: 4px; }
+        .nav-button.active { color: var(--primary-color); transform: translateY(-5px); }
+        
+        /* --- 4. Glassmorphism Card & Common Elements --- */
+        .glass-card { background: var(--glass-bg); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid var(--glass-border); border-radius: 20px; padding: 20px; box-shadow: 0 8px 32px 0 var(--shadow-color); margin-bottom: 20px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; opacity: 0.8; text-align: left;}
+        .form-group input { width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--text-light); font-size: 16px; }
+        .btn-primary { width: 100%; padding: 15px; border: none; border-radius: 15px; font-size: 18px; font-weight: 600; cursor: pointer; background: linear-gradient(45deg, var(--primary-color), var(--secondary-color)); color: var(--text-dark); transition: all 0.3s ease; }
+        .btn-primary:hover { box-shadow: 0 0 20px var(--secondary-color); }
+        .btn-primary:disabled { background: #555; color: #999; cursor: not-allowed; box-shadow: none; }
+        .btn-secondary { width: 100%; padding: 12px; margin-top: 15px; border-radius: 15px; font-size: 16px; font-weight: 600; cursor: pointer; background: var(--glass-bg); border: 1px solid var(--glass-border); color: var(--text-light); transition: all 0.3s ease; }
+        .btn-secondary:hover { background: var(--glass-border); }
+
+        /* --- 5. Screen-Specific Styles --- */
+        .balance-card h2 { font-size: 18px; font-weight: 300; opacity: 0.8; }
+        .balance-card .balance-amount { font-size: 48px; font-weight: 700; color: white; margin: 10px 0; }
+        .balance-card .balance-amount sup { font-size: 24px; font-weight: 600; margin-right: 4px; }
+        .actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .action-button { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 15px; padding: 20px 10px; text-align: center; cursor: pointer; transition: transform 0.2s ease, background 0.2s ease; }
+        .action-button:hover { transform: translateY(-5px); background: rgba(255, 255, 255, 0.2); }
+        .action-button i { font-size: 28px; color: var(--primary-color); margin-bottom: 10px; }
+        .action-button p { font-size: 14px; font-weight: 600; }
+        
+        .task-item { display: flex; padding: 15px; gap: 15px; align-items: center; }
+        .task-item-image { width: 80px; height: 80px; object-fit: cover; border-radius: 15px; flex-shrink: 0; }
+        .task-item-content { flex-grow: 1; display: flex; flex-direction: column; }
+        .task-item-content h4 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+        .task-item-content .task-description { font-size: 13px; opacity: 0.8; margin-bottom: 8px; flex-grow: 1; }
+        .task-item-content .task-reward { font-size: 14px; font-weight: 700; color: var(--primary-color); margin-bottom: 10px; }
+        .task-button { background: linear-gradient(45deg, var(--primary-color), var(--secondary-color)); color: var(--text-dark); border: none; padding: 8px 15px; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; text-align: center; align-self: flex-start; }
+        .task-button:hover { opacity: 0.9; box-shadow: 0 0 15px var(--primary-color); }
+        .task-button:disabled { background: #555; color: #999; cursor: not-allowed; }
+
+        /* Wheel Styles */
+        .wheel-container { position: relative; width: 280px; height: 280px; margin: 10px auto; display: flex; justify-content: center; align-items: center; }
+        .wheel-pointer { position: absolute; width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 25px solid var(--primary-color); top: -10px; z-index: 10; filter: drop-shadow(0 -2px 2px rgba(0,0,0,0.3)); }
+        .wheel { position: relative; width: 100%; height: 100%; background: conic-gradient(from 0deg, #fff 0 0); border-radius: 50%; border: 5px solid var(--glass-border); overflow: hidden; transition: transform 5s cubic-bezier(0.25, 1, 0.5, 1); box-shadow: 0 0 20px rgba(0,0,0,0.5), inset 0 0 15px rgba(0,0,0,0.3); }
+        .wheel-segment { position: absolute; top: 0; left: 0; width: 100%; height: 100%; clip-path: polygon(50% 50%, 100% 50%, 100% 0, 50% 0); transform-origin: 50% 50%; transform: rotate(var(--rotation)); display: flex; justify-content: center; align-items: flex-start; }
+        .wheel-segment span { display: block; transform: rotate(calc(var(--segment-angle)/2)); color: var(--text-dark); font-weight: 700; font-size: 16px; padding-top: 20px; }
+        #spin-history-container { max-height: 150px; overflow-y: auto; }
+        
+        /* History & Referral Screens */
+        .history-list-container { max-height: 500px; overflow-y: auto; padding: 0 10px; }
+        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 5px; border-bottom: 1px solid var(--glass-border); }
+        .history-item:last-child { border-bottom: none; }
+        .history-info { display: flex; flex-direction: column; gap: 4px; }
+        .history-amount { font-weight: 700; font-size: 16px; }
+        .history-date { font-size: 12px; opacity: 0.7; }
+        .history-status { font-weight: 700; text-transform: capitalize; }
+        .history-status.completed { color: var(--status-completed); }
+        .back-button { position: absolute; top: 25px; left: 20px; font-size: 24px; cursor: pointer; z-index: 5; }
+        .history-list-container p { text-align: center; opacity: 0.7; padding: 20px 0; }
+        .spin-history-amount.win { color: var(--primary-color); }
+        .spin-history-amount.lose { color: #aaa; }
+        .referral-code-box { background: rgba(0,0,0,0.2); border: 1px dashed var(--glass-border); padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 20px; }
+        .referral-code-box p { font-size: 24px; font-weight: 700; letter-spacing: 4px; color: var(--primary-color); margin-bottom: 10px; }
+        .referral-code-box small { opacity: 0.8; }
+
+        /* --- 6. Utility and Helper Classes --- */
+        .hidden { display: none !important; }
+        .content-screen.hidden { display: none !important; }
+        .content-screen { position: relative; }
+        .screen-title { text-align: center; font-size: 22px; font-weight: 600; margin-bottom: 25px; position: relative; }
+        .screen-title.has-back-button { padding-top: 50px; }
+        #toast-notification { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: linear-gradient(45deg, var(--primary-color), var(--secondary-color)); color: var(--text-dark); padding: 12px 25px; border-radius: 15px; font-weight: 600; z-index: 1000; opacity: 0; transition: opacity 0.5s, bottom 0.5s; pointer-events: none; }
+        #toast-notification.show { bottom: 120px; opacity: 1; }
+    </style>
+  
+  <script src='//libtl.com/sdk.js' data-zone='9566689' data-sdk='show_9566689'></script>
+  
+</head>
+<body>
+    <div class="mobile-container">
+        <div class="background-shapes"><div class="shape shape1"></div><div class="shape shape2"></div><div class="shape shape3"></div></div>
+        <div class="app-screen-wrapper">
+            <!-- Auth screens -->
+            <div id="auth-container">
+                <div id="login-screen" class="auth-screen">
+                    <div class="glass-card auth-card"><h1>EarnyHA</h1><p>Login to start earning rewards</p><div class="form-group"><input type="email" id="login-email-input" placeholder="Enter your email"></div><div class="form-group"><input type="password" id="login-password-input" placeholder="Enter your password"></div><button id="login-button" class="btn-primary">Login</button><p class="form-switcher">Don't have an account? <span id="switch-to-register">Register</span></p></div>
+                </div>
+                <div id="register-screen" class="auth-screen hidden">
+                    <div class="glass-card auth-card"><h1>Register</h1><p>Create your new account</p><div class="form-group"><input type="text" id="register-username-input" placeholder="Choose a username"></div><div class="form-group"><input type="email" id="register-email-input" placeholder="Enter your email"></div><div class="form-group"><input type="password" id="register-password-input" placeholder="Create a password"></div><div class="form-group"><input type="password" id="register-confirm-password-input" placeholder="Confirm password"></div>
+                    <!-- --- REFERRAL ADDITION --- -->
+                    <div class="form-group"><input type="text" id="register-referral-code-input" placeholder="Referral Code (Optional)"></div>
+                    <button id="register-button" class="btn-primary">Create Account</button><p class="form-switcher">Already have an account? <span id="switch-to-login">Login</span></p></div>
+                </div>
+            </div>
+
+            <!-- Main App UI -->
+            <header class="app-header hidden"><h1>EarnyHA</h1><i class="fa-solid fa-right-from-bracket" style="font-size: 24px; cursor: pointer;" id="logout-button"></i></header>
+            <main id="main-content" class="hidden">
+                <div id="home-screen" class="content-screen"><div class="glass-card balance-card"><h2>Your Current Balance</h2><p class="balance-amount"><sup>₹</sup><span id="balance-display">0.00</span></p></div><div class="actions-grid"><div class="action-button" onclick="showScreen('tasks')"><i class="fa-solid fa-list-check"></i><p>Earn Now</p></div><div class="action-button" onclick="showScreen('withdraw')"><i class="fa-solid fa-wallet"></i><p>Withdraw</p></div><div class="action-button" onclick="showScreen('daily-bonus')"><i class="fa-solid fa-calendar-day"></i><p>Daily Bonus</p></div><div class="action-button" onclick="showScreen('wheel')"><i class="fa-solid fa-dharmachakra"></i><p>Earning Wheel</p></div>
+                <!-- --- REFERRAL ADDITION --- -->
+                <div class="action-button" onclick="showScreen('referral')"><i class="fa-solid fa-users"></i><p>Refer & Earn</p></div>
+                </div></div>
+                <div id="tasks-screen" class="content-screen hidden"><h2 class="screen-title">Complete Tasks to Earn</h2><div id="task-list"></div></div>
+                <div id="profile-screen" class="content-screen hidden"><h2 class="screen-title">My Profile</h2><div class="glass-card profile-info"><p>Username: <span id="profile-username"></span></p><p>Email: <span id="profile-email"></span></p><p>Total Earned: <span>₹<span id="profile-total-earned"></span></span></p>
+                <!-- --- REFERRAL ADDITION --- -->
+                <p>Referral Earnings: <span>₹<span id="profile-referral-earnings">0.00</span></span></p>
+                </div></div>
+                
+                <div id="withdraw-screen" class="content-screen hidden">
+                    <h2 class="screen-title">Withdraw Funds</h2>
+                    <div class="glass-card"><div class="form-group"><label for="withdraw-amount">Amount (₹)</label><input type="number" id="withdraw-amount" placeholder="e.g., 500.00"></div><div class="form-group"><label for="upi-id">UPI ID</label><input type="text" id="upi-id" placeholder="yourname@bank"></div><button id="withdraw-button" class="btn-primary">Request Withdrawal</button></div>
+                </div>
+                
+                <div id="daily-bonus-screen" class="content-screen hidden">
+                    <h2 class="screen-title">Daily Bonus</h2>
+                    <div class="glass-card" style="text-align: center;"><i class="fa-solid fa-gift" style="font-size: 80px; color: var(--primary-color); margin-bottom: 20px;"></i><h3>Claim Your Daily Reward!</h3><p style="opacity: 0.8; margin: 10px 0 20px;">Come back every 24 hours to claim a free bonus.</p><button id="claim-bonus-button" class="btn-primary">Claim ₹1.00 Bonus</button><button class="btn-secondary" onclick="showScreen('daily-bonus-history')">View Claim History</button></div>
+                </div>
+
+                <div id="wheel-screen" class="content-screen hidden">
+                    <h2 class="screen-title">Earning Wheel</h2>
+                    <div class="wheel-container"><div class="wheel-pointer"></div><div class="wheel" id="earning-wheel"></div></div>
+                    <div class="wheel-controls glass-card"><button id="spin-wheel-button" class="btn-primary">SPIN</button><p>Spins Left Today: <span id="spins-left-display">0</span></p></div>
+                    <div id="spin-history-container" class="glass-card"><h4 style="text-align: center; margin-bottom: 15px; font-weight: 600;">Recent Spins</h4><div id="spin-history-list"></div></div>
+                </div>
+
+                <!-- --- REFERRAL ADDITION --- -->
+                <div id="referral-screen" class="content-screen hidden">
+                    <h2 class="screen-title">Refer & Earn</h2>
+                    <div class="glass-card" style="text-align: center;">
+                        <h3>Share Your Code & Earn!</h3>
+                        <p style="opacity: 0.8; margin: 10px 0 20px;">Share your referral code with friends. When they sign up, you both get a bonus reward!</p>
+                        <div class="referral-code-box">
+                            <small>Your Unique Referral Code</small>
+                            <p id="referral-code-display">ABCDEF</p>
+                        </div>
+                        <button id="copy-referral-code-button" class="btn-primary">Copy Code</button>
+                        <h4 style="margin-top: 30px;">Total Referral Earnings: ₹<span id="referral-earnings-display">0.00</span></h4>
+                    </div>
+                </div>
+
+                <!-- History Screens -->
+                <div id="daily-bonus-history-screen" class="content-screen hidden">
+                    <i class="fa-solid fa-arrow-left back-button" onclick="showScreen('daily-bonus')"></i>
+                    <h2 class="screen-title has-back-button">Daily Bonus History</h2>
+                    <div class="glass-card history-list-container"><div id="daily-bonus-history-list"></div></div>
+                </div>
+            </main>
+            <nav class="bottom-nav glass-card hidden"><button class="nav-button active" data-screen="home"><i class="fa-solid fa-house"></i>Home</button><button class="nav-button" data-screen="tasks"><i class="fa-solid fa-rocket"></i>Tasks</button><button class="nav-button" data-screen="withdraw"><i class="fa-solid fa-money-bill-transfer"></i>Withdraw</button><button class="nav-button" data-screen="profile"><i class="fa-solid fa-user"></i>Profile</button></nav>
+        </div>
+        <div id="toast-notification"></div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- 1. FIREBASE CONFIGURATION ---
+        const firebaseConfig = {
+          apiKey: "AIzaSyAvOCamAwrk7yg-I6RVuMfzE_vKbZlAwwo",
+          authDomain: "earnyha-app.firebaseapp.com",
+          projectId: "earnyha-app",
+          storageBucket: "earnyha-app.firebasestorage.app",
+          messagingSenderId: "117222358496",
+          appId: "1:117222358496:web:40ef494c898fea61ebff85",
+          measurementId: "G-ME6C5D883Z"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // --- 2. GLOBAL STATE & CONFIG ---
+        let currentUser = null;
+        let userData = {}; // Store user data globally
+        let unsubscribeUserData = null;
+        let availableTasks = [];
+        let isSpinning = false;
+        // --- REFERRAL ADDITION ---
+        const REFERRAL_BONUS_FOR_REFERRER = 5.00;
+        const REFERRAL_BONUS_FOR_NEW_USER = 2.00;
+
+        const wheelPrizes = [
+            { label: '₹0.50', amount: 0.50, color: '#fdd835' }, { label: 'Try Again', amount: 0, color: '#78909c' },
+            { label: '₹1.00', amount: 1.00, color: '#66bb6a' }, { label: '₹0.10', amount: 0.10, color: '#fdd835' },
+            { label: '₹2.00', amount: 2.00, color: '#ff7043' }, { label: 'Try Again', amount: 0, color: '#78909c' },
+            { label: '₹0.20', amount: 0.20, color: '#fdd835' }, { label: '₹5.00', amount: 5.00, color: '#d45bff' }
+        ];
+
+        // --- 3. DOM SELECTORS ---
+        const loginEmailInput = document.getElementById('login-email-input'), loginPasswordInput = document.getElementById('login-password-input'), registerUsernameInput = document.getElementById('register-username-input'), registerEmailInput = document.getElementById('register-email-input'), registerPasswordInput = document.getElementById('register-password-input'), registerConfirmPasswordInput = document.getElementById('register-confirm-password-input'), balanceDisplay = document.getElementById('balance-display'), taskListContainer = document.getElementById('task-list'), profileUsername = document.getElementById('profile-username'), profileEmail = document.getElementById('profile-email'), profileTotalEarned = document.getElementById('profile-total-earned');
+        const authContainer = document.getElementById('auth-container'), appHeader = document.querySelector('.app-header'), mainContent = document.getElementById('main-content'), bottomNav = document.querySelector('.bottom-nav');
+        const withdrawButton = document.getElementById('withdraw-button'), withdrawAmountInput = document.getElementById('withdraw-amount'), upiIdInput = document.getElementById('upi-id');
+        const claimBonusButton = document.getElementById('claim-bonus-button'), earningWheel = document.getElementById('earning-wheel'), spinWheelButton = document.getElementById('spin-wheel-button'), spinsLeftDisplay = document.getElementById('spins-left-display');
+        const spinHistoryList = document.getElementById('spin-history-list'), dailyBonusHistoryList = document.getElementById('daily-bonus-history-list');
+        // --- REFERRAL ADDITION ---
+        const registerReferralCodeInput = document.getElementById('register-referral-code-input'), profileReferralEarnings = document.getElementById('profile-referral-earnings'), referralCodeDisplay = document.getElementById('referral-code-display'), referralEarningsDisplay = document.getElementById('referral-earnings-display'), copyReferralCodeButton = document.getElementById('copy-referral-code-button');
+
+        // --- 4. CORE APP LOGIC ---
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentUser = user;
+                const userRef = db.collection('users').doc(user.uid);
+                unsubscribeUserData = userRef.onSnapshot(async (doc) => {
+                    if (doc.exists) {
+                        userData = doc.data(); // Store user data
+                        balanceDisplay.textContent = userData.balance.toFixed(2);
+                        profileUsername.textContent = userData.username;
+                        profileEmail.textContent = userData.email;
+                        profileTotalEarned.textContent = userData.totalEarned.toFixed(2);
+                        profileReferralEarnings.textContent = (userData.referralEarnings || 0).toFixed(2);
+                        referralCodeDisplay.textContent = userData.referralCode || '...';
+                        referralEarningsDisplay.textContent = (userData.referralEarnings || 0).toFixed(2);
+                        await fetchAndRenderTasks(userData.completedTasks || []);
+                    }
+                }, error => {
+                    console.error("Error listening to user data:", error);
+                    showToast("Could not load user data. Check console.");
+                });
+                
+                showAppUI(true);
+                showScreen('home');
+
+                // --- IN-APP INTERSTITIAL INTEGRATION (INITIALIZED ON LOGIN) ---
+                show_9566689({
+                  type: 'inApp',
+                  inAppSettings: {
+                    frequency: 2,
+                    capping: 0.1,
+                    interval: 30,
+                    timeout: 5,
+                    everyPage: false
+                  }
+                });
+
+            } else {
+                currentUser = null;
+                userData = {};
+                if (unsubscribeUserData) unsubscribeUserData();
+                showAppUI(false);
+                toggleAuthForms('login');
+            }
+        });
+        
+        // --- 5. UI & HISTORY RENDERING FUNCTIONS ---
+        function generateWheel() { const segmentCount = wheelPrizes.length; const segmentAngle = 360 / segmentCount; earningWheel.innerHTML = ''; let gradientParts = []; let currentAngle = 0; wheelPrizes.forEach((prize, index) => { const rotation = currentAngle; const segment = document.createElement('div'); segment.className = 'wheel-segment'; segment.style.setProperty('--rotation', `${rotation}deg`); segment.style.setProperty('--segment-angle', `${segmentAngle}deg`); segment.innerHTML = `<span>${prize.label}</span>`; earningWheel.appendChild(segment); gradientParts.push(`${prize.color} ${currentAngle}deg ${currentAngle + segmentAngle}deg`); currentAngle += segmentAngle; }); earningWheel.style.background = `conic-gradient(from -${segmentAngle/2}deg, ${gradientParts.join(', ')})`; };
+        async function renderSpinHistory() { if (!currentUser) return; spinHistoryList.innerHTML = '<p>Loading...</p>'; const spinsRef = db.collection('users').doc(currentUser.uid).collection('spins'); try { const snapshot = await spinsRef.orderBy('timestamp', 'desc').limit(10).get(); if (snapshot.empty) { spinHistoryList.innerHTML = '<p>No spin history yet.</p>'; return; } spinHistoryList.innerHTML = ''; snapshot.forEach(doc => { const spin = doc.data(); const item = document.createElement('div'); item.className = 'history-item'; const amountText = spin.amount > 0 ? `+ ₹${spin.amount.toFixed(2)}` : 'Try Again'; const amountClass = spin.amount > 0 ? 'win' : 'lose'; const date = spin.timestamp ? new Date(spin.timestamp.toDate()).toLocaleString() : 'Just now'; item.innerHTML = `<div class="history-info"><span class="history-amount spin-history-amount ${amountClass}">${amountText}</span></div><span class="history-date">${date}</span>`; spinHistoryList.appendChild(item); }); } catch (error) { console.error("Error fetching spin history:", error); spinHistoryList.innerHTML = '<p>Could not load history.</p>'; } }
+        async function renderBonusHistory() { if (!currentUser) return; dailyBonusHistoryList.innerHTML = '<p>Loading history...</p>'; const bonusRef = db.collection('users').doc(currentUser.uid).collection('dailyBonuses'); try { const snapshot = await bonusRef.orderBy('claimedAt', 'desc').limit(30).get(); if (snapshot.empty) { dailyBonusHistoryList.innerHTML = '<p>No daily bonuses claimed yet.</p>'; return; } dailyBonusHistoryList.innerHTML = ''; snapshot.forEach(doc => { const bonus = doc.data(); const item = document.createElement('div'); item.className = 'history-item'; const date = bonus.claimedAt ? new Date(bonus.claimedAt.toDate()).toLocaleDateString() : 'N/A'; item.innerHTML = `<div class="history-info"><span class="history-amount">+ ₹${bonus.amount.toFixed(2)}</span><span class="history-date">Claimed on ${date}</span></div><span class="history-status completed">Claimed</span>`; dailyBonusHistoryList.appendChild(item); }); } catch (error) { console.error("Error fetching bonus history:", error); dailyBonusHistoryList.innerHTML = '<p>Could not load history.</p>'; } }
+
+        // --- 6. EVENT HANDLERS & ACTIONS ---
+        const generateReferralCode = () => Math.random().toString(36).substring(2, 8).toUpperCase();
+
+        async function handleRegistration() {
+            const username = registerUsernameInput.value.trim();
+            const email = registerEmailInput.value.trim();
+            const password = registerPasswordInput.value;
+            const referralCode = registerReferralCodeInput.value.trim().toUpperCase();
+
+            if (password !== registerConfirmPasswordInput.value) { showToast("Passwords do not match."); return; }
+            if (!username || !email || !password) { showToast("All fields are required."); return; }
+
+            let initialBalance = 0;
+            let referredBy = null;
+
+            try {
+                if (referralCode) {
+                    const referrerQuery = await db.collection('users').where('referralCode', '==', referralCode).limit(1).get();
+                    if (!referrerQuery.empty) {
+                        const referrerDoc = referrerQuery.docs[0];
+                        referredBy = referrerDoc.id;
+                        initialBalance += REFERRAL_BONUS_FOR_NEW_USER;
+                        
+                        const referrerRef = db.collection('users').doc(referredBy);
+                        await referrerRef.update({
+                            balance: firebase.firestore.FieldValue.increment(REFERRAL_BONUS_FOR_REFERRER),
+                            totalEarned: firebase.firestore.FieldValue.increment(REFERRAL_BONUS_FOR_REFERRER),
+                            referralEarnings: firebase.firestore.FieldValue.increment(REFERRAL_BONUS_FOR_REFERRER)
+                        });
+                        showToast(`Bonus for your referrer!`);
+                    } else {
+                        showToast("Invalid referral code, proceeding without bonus.");
+                    }
+                }
+
+                const cred = await auth.createUserWithEmailAndPassword(email, password);
+                const userRef = db.collection('users').doc(cred.user.uid);
+                
+                await userRef.set({ 
+                    username, email, balance: initialBalance, totalEarned: initialBalance, completedTasks: [], 
+                    memberSince: firebase.firestore.FieldValue.serverTimestamp(), spinsLeft: 5, lastSpinDate: null,
+                    referralCode: generateReferralCode(), referralEarnings: 0, referredBy: referredBy
+                });
+
+            } catch (err) { showToast(err.message); }
+        }
+        
+        async function handleLogin() { const email = loginEmailInput.value.trim(); const password = loginPasswordInput.value; if (!email || !password) { showToast("Please enter email and password."); return; } try { await auth.signInWithEmailAndPassword(email, password); } catch (err) { showToast(err.message); } }
+        async function handleCompleteTask(taskId, button) { const task = availableTasks.find(t => t.id === taskId); if (!task || !currentUser) return; button.disabled = true; button.textContent = 'Processing...'; window.open(task.buttonUrl, '_blank'); setTimeout(async () => { const userRef = db.collection('users').doc(currentUser.uid); try { await db.runTransaction(async (transaction) => { const userDoc = await transaction.get(userRef); if (!userDoc.exists) throw "User not found!"; const completedTasks = userDoc.data().completedTasks || []; if (completedTasks.includes(task.id)) { showToast("Task already completed."); return; } transaction.update(userRef, { balance: firebase.firestore.FieldValue.increment(task.reward), totalEarned: firebase.firestore.FieldValue.increment(task.reward), completedTasks: firebase.firestore.FieldValue.arrayUnion(task.id) }); }); showToast(`+ ₹${task.reward.toFixed(2)} added!`); } catch (error) { showToast("Error: " + error); button.disabled = false; button.textContent = 'Complete Task'; } }, 3000); }
+        async function handleWithdrawal() { const amount = parseFloat(withdrawAmountInput.value), upiId = upiIdInput.value.trim(); if (isNaN(amount) || amount <= 0) { showToast("Please enter a valid amount."); return; } if (!upiId || !upiId.includes('@')) { showToast("Please enter a valid UPI ID."); return; } if (!currentUser) { showToast("You must be logged in."); return; } withdrawButton.disabled = true; withdrawButton.textContent = "Processing..."; const userRef = db.collection('users').doc(currentUser.uid), withdrawalRef = db.collection('withdrawals').doc(); try { await db.runTransaction(async (t) => { const userDoc = await t.get(userRef); if (!userDoc.exists) throw "User not found!"; if (userDoc.data().balance < amount) throw "Insufficient balance."; t.update(userRef, { balance: firebase.firestore.FieldValue.increment(-amount) }); t.set(withdrawalRef, { userId: currentUser.uid, username: userDoc.data().username, amount: amount, upiId: upiId, status: "pending", requestedAt: firebase.firestore.FieldValue.serverTimestamp() }); }); showToast("Withdrawal request submitted!"); withdrawAmountInput.value = ''; upiIdInput.value = ''; } catch (error) { showToast("Error: " + String(error.message || error)); } finally { withdrawButton.disabled = false; withdrawButton.textContent = "Request Withdrawal"; } }
+        
+        async function setupBonusScreen() { if (!currentUser) return; claimBonusButton.disabled = true; const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0); const q = db.collection('users').doc(currentUser.uid).collection('dailyBonuses').where('claimedAt', '>=', startOfToday).limit(1); try { const snapshot = await q.get(); if (snapshot.empty) { claimBonusButton.disabled = false; claimBonusButton.textContent = 'Claim ₹1.00 Bonus'; } else { claimBonusButton.textContent = 'Claimed Today'; } } catch(e) { claimBonusButton.disabled = false; console.error("Error checking bonus eligibility:", e); } }
+        
+        async function handleDailyBonus() {
+            if (!currentUser) return;
+            const userRef = db.collection('users').doc(currentUser.uid);
+            const startOfToday = new Date();
+            startOfToday.setHours(0, 0, 0, 0);
+            const q = userRef.collection('dailyBonuses').where('claimedAt', '>=', startOfToday).limit(1);
+            const snapshot = await q.get();
+            if (!snapshot.empty) { showToast("Bonus already claimed today."); await setupBonusScreen(); return; }
+            claimBonusButton.disabled = true;
+            claimBonusButton.textContent = 'Loading Ad...';
+
+            // --- REWARDED INTERSTITIAL INTEGRATION ---
+            show_9566689().then(async () => {
+                showToast('Ad seen! Claiming your bonus...');
+                claimBonusButton.textContent = 'Processing...';
+                const bonusAmount = 1.00;
+                try {
+                    await userRef.collection('dailyBonuses').add({ amount: bonusAmount, claimedAt: firebase.firestore.FieldValue.serverTimestamp() });
+                    await userRef.update({ balance: firebase.firestore.FieldValue.increment(bonusAmount), totalEarned: firebase.firestore.FieldValue.increment(bonusAmount) });
+                    showToast(`+ ₹${bonusAmount.toFixed(2)} added!`);
+                    claimBonusButton.textContent = 'Claimed Today';
+                } catch (error) {
+                    showToast("Error: " + String(error));
+                    await setupBonusScreen();
+                }
+            }).catch((error) => {
+                console.error("Rewarded ad error or closed:", error);
+                showToast("Ad was not completed. Please try again.");
+                setupBonusScreen();
+            });
+        }
+
+        async function setupWheelScreen() {
+            if (!currentUser || isSpinning) return;
+            spinWheelButton.disabled = true;
+            const userRef = db.collection('users').doc(currentUser.uid);
+            try {
+                await db.runTransaction(async (t) => {
+                    const doc = await t.get(userRef);
+                    if (!doc.exists) throw "User not found!";
+                    let { spinsLeft = 0, lastSpinDate = null } = doc.data();
+                    const today = new Date().toISOString().slice(0, 10);
+                    if (lastSpinDate !== today) {
+                        spinsLeft = 5;
+                        t.update(userRef, { spinsLeft, lastSpinDate: today });
+                    }
+                    spinsLeftDisplay.textContent = spinsLeft;
+                    spinWheelButton.disabled = spinsLeft <= 0;
+                    spinWheelButton.textContent = spinsLeft > 0 ? "Watch Ad to Spin" : "No Spins Left";
+                });
+            } catch (error) { showToast("Error setting up wheel: " + String(error.message || error)); }
+        }
+
+        async function handleSpinWheel() {
+            if (isSpinning || !currentUser) return;
+            const userRef = db.collection('users').doc(currentUser.uid);
+            const userDoc = await userRef.get();
+            if (!userDoc.exists || (userDoc.data().spinsLeft || 0) <= 0) { showToast("No spins left for today."); return; }
+            spinWheelButton.disabled = true;
+            spinWheelButton.textContent = 'Loading Ad...';
+
+            // --- REWARDED POPUP INTEGRATION ---
+            show_9566689('pop').then(async () => {
+                isSpinning = true;
+                spinWheelButton.textContent = 'Spinning...';
+                await userRef.update({ spinsLeft: firebase.firestore.FieldValue.increment(-1) });
+                spinsLeftDisplay.textContent = parseInt(spinsLeftDisplay.textContent) - 1;
+
+                const segmentAngle = 360 / wheelPrizes.length;
+                const randomSegment = Math.floor(Math.random() * wheelPrizes.length);
+                const prize = wheelPrizes[randomSegment];
+                const stopAngle = (randomSegment * segmentAngle) + (segmentAngle / 2);
+                const currentRotation = earningWheel.currentRotation || 0;
+                const revolutions = 5 * 360;
+                const finalRotation = revolutions + stopAngle - (currentRotation % 360);
+                earningWheel.style.transition = 'transform 5s cubic-bezier(0.25, 1, 0.5, 1)';
+                earningWheel.style.transform = `rotate(${currentRotation + finalRotation}deg)`;
+                earningWheel.currentRotation = currentRotation + finalRotation;
+
+                setTimeout(async () => {
+                    isSpinning = false;
+                    const message = prize.amount > 0 ? `You won ₹${prize.amount.toFixed(2)}!` : "Better luck next time!";
+                    showToast(message);
+                    const spinData = { amount: prize.amount, timestamp: firebase.firestore.FieldValue.serverTimestamp() };
+                    await userRef.collection('spins').add(spinData);
+                    if (prize.amount > 0) {
+                        await userRef.update({ balance: firebase.firestore.FieldValue.increment(prize.amount), totalEarned: firebase.firestore.FieldValue.increment(prize.amount) });
+                    }
+                    if (parseInt(spinsLeftDisplay.textContent) > 0) {
+                        spinWheelButton.disabled = false;
+                        spinWheelButton.textContent = 'Watch Ad to Spin';
+                    } else {
+                        spinWheelButton.textContent = 'No Spins Left';
+                    }
+                    await renderSpinHistory();
+                }, 5500);
+            }).catch(e => {
+                console.error("Rewarded popup error:", e);
+                showToast("Ad not completed. Please watch the ad to spin.");
+                setupWheelScreen();
+            });
+        }
+
+        // --- 7. EVENT LISTENERS & HELPER FUNCTIONS ---
+        const addTaskButtonListeners = () => { document.querySelectorAll('.task-button').forEach(b => { b.addEventListener('click', () => { handleCompleteTask(b.dataset.taskId, b); }); }); };
+        const toggleAuthForms = (show) => { document.getElementById('login-screen').classList.toggle('hidden', show !== 'login'); document.getElementById('register-screen').classList.toggle('hidden', show !== 'register'); };
+        const showAppUI = (show) => { authContainer.classList.toggle('hidden', show); appHeader.classList.toggle('hidden', !show); mainContent.classList.toggle('hidden', !show); bottomNav.classList.toggle('hidden', !show); };
+        const showToast = (message) => { const t = document.getElementById('toast-notification'); t.textContent = message; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); };
+        
+        window.showScreen = (screenId) => { 
+            document.querySelectorAll('.content-screen').forEach(s => s.classList.add('hidden'));
+            document.getElementById(`${screenId}-screen`).classList.remove('hidden');
+            document.querySelectorAll('.nav-button').forEach(b => b.classList.remove('active'));
+            const navScreenMap = {'daily-bonus-history': 'home', 'wheel': 'home', 'daily-bonus': 'home', 'referral': 'home' };
+            const navTarget = navScreenMap[screenId] || screenId;
+            const activeNavButton = document.querySelector(`.nav-button[data-screen="${navTarget}"]`);
+            if (activeNavButton) { activeNavButton.classList.add('active'); }
+            if (screenId === 'daily-bonus') setupBonusScreen();
+            if (screenId === 'wheel') { setupWheelScreen(); renderSpinHistory(); }
+            if (screenId === 'daily-bonus-history') renderBonusHistory();
+        };
+
+        document.getElementById('switch-to-register').addEventListener('click', () => toggleAuthForms('register'));
+        document.getElementById('switch-to-login').addEventListener('click', () => toggleAuthForms('login'));
+        document.getElementById('register-button').addEventListener('click', handleRegistration);
+        document.getElementById('login-button').addEventListener('click', handleLogin);
+        document.getElementById('logout-button').addEventListener('click', () => auth.signOut());
+        withdrawButton.addEventListener('click', handleWithdrawal);
+        claimBonusButton.addEventListener('click', handleDailyBonus);
+        spinWheelButton.addEventListener('click', handleSpinWheel);
+        document.querySelectorAll('.nav-button').forEach(b => b.addEventListener('click', () => showScreen(b.dataset.screen)));
+
+        copyReferralCodeButton.addEventListener('click', () => {
+            if (navigator.clipboard && userData.referralCode) {
+                navigator.clipboard.writeText(userData.referralCode).then(() => {
+                    showToast('Referral code copied!');
+                });
+            }
+        });
+
+        async function fetchAndRenderTasks(completedTaskIds) { try { const snapshot = await db.collection('tasks').orderBy("createdAt", "desc").get(); availableTasks = []; snapshot.forEach(doc => availableTasks.push({ id: doc.id, ...doc.data() })); renderTasks(completedTaskIds); } catch (error) { console.error("Error fetching tasks:", error); taskListContainer.innerHTML = '<div class="glass-card" style="text-align: center;"><p>Could not load tasks.</p></div>'; } };
+        function renderTasks(completedTaskIds) { taskListContainer.innerHTML = ''; if (availableTasks.length === 0) { taskListContainer.innerHTML = '<div class="glass-card" style="text-align: center;"><p>No tasks available right now.</p></div>'; return; } availableTasks.forEach(task => { const isCompleted = completedTaskIds.includes(task.id); const taskCard = document.createElement('div'); taskCard.className = 'glass-card task-item'; taskCard.innerHTML = `<img src="${task.imageUrl}" alt="${task.name}" class="task-item-image"><div class="task-item-content"><h4>${task.name}</h4><p class="task-description">${task.description}</p><p class="task-reward">+ ₹${task.reward.toFixed(2)}</p><button class="task-button" data-task-id="${task.id}" ${isCompleted ? 'disabled' : ''}>${isCompleted ? 'Completed' : 'Complete Task'}</button></div>`; taskListContainer.appendChild(taskCard); }); addTaskButtonListeners(); };
+        
+        generateWheel();
+    });
+    </script>
+</body>
+</html>

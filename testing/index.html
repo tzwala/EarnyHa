@@ -202,14 +202,17 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // --- FIREBASE CONFIG ---
-    const firebaseConfig = {
-        apiKey: "YOUR_API_KEY", // Replace with your actual config
-        authDomain: "earnyha-app.firebaseapp.com",
-        projectId: "earnyha-app",
-        storageBucket: "earnyha-app.appspot.com",
-        messagingSenderId: "YOUR_SENDER_ID",
-        appId: "YOUR_APP_ID"
-    };
+    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyAvOCamAwrk7yg-I6RVuMfzE_vKbZlAwwo",
+  authDomain: "earnyha-app.firebaseapp.com",
+  databaseURL: "https://earnyha-app-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "earnyha-app",
+  storageBucket: "earnyha-app.firebasestorage.app",
+  messagingSenderId: "117222358496",
+  appId: "1:117222358496:web:40ef494c898fea61ebff85",
+  measurementId: "G-ME6C5D883Z"
+};
     // Initialize Firebase if not already initialized
     if (!firebase.apps.length) {
         firebase.initializeApp(firebaseConfig);

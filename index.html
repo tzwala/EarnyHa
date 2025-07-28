@@ -249,17 +249,87 @@
         const registerReferralCodeInput = document.getElementById('register-referral-code-input'), profileReferralEarnings = document.getElementById('profile-referral-earnings'), referralCodeDisplay = document.getElementById('referral-code-display'), referralEarningsDisplay = document.getElementById('referral-earnings-display'), copyReferralCodeButton = document.getElementById('copy-referral-code-button');
         const gameListContainer = document.getElementById('game-list');
 
-        // --- 4. CORE APP LOGIC (UNCHANGED) ---
-        auth.onAuthStateChanged(user => { if (user) { currentUser = user; const userRef = db.collection('users').doc(user.uid); unsubscribeUserData = userRef.onSnapshot(async (doc) => { if (doc.exists) { userData = doc.data(); balanceDisplay.textContent = userData.balance.toFixed(2); profileUsername.textContent = userData.username; profileEmail.textContent = userData.email; profileTotalEarned.textContent = userData.totalEarned.toFixed(2); profileReferralEarnings.textContent = (userData.referralEarnings || 0).toFixed(2); referralCodeDisplay.textContent = userData.referralCode || '...'; referralEarningsDisplay.textContent = (userData.referralEarnings || 0).toFixed(2); await fetchAndRenderTasks(userData.completedTasks || []); } }, error => { console.error("Error listening to user data:", error); showToast("Could not load user data. Check console."); }); showAppUI(true); showScreen('home'); } else { currentUser = null; userData = {}; if (unsubscribeUserData) unsubscribeUserData(); if (activeGameSession.timerId) { clearInterval(activeGameSession.timerId); } activeGameSession = { gameId: null, timerId: null, startTime: null }; showAppUI(false); toggleAuthForms('login'); } });
+        // --- 4. CORE APP LOGIC ---
+        auth.onAuthStateChanged(user => { if (user) { currentUser = user; const userRef = db.collection('users').doc(user.uid); unsubscribeUserData = userRef.onSnapshot(async (doc) => { if (doc.exists) { userData = doc.data(); balanceDisplay.textContent = userData.balance.toFixed(2); profileUsername.textContent = userData.username; profileEmail.textContent = userData.email; profileTotalEarned.textContent = userData.totalEarned.toFixed(2); profileReferralEarnings.textContent = (userData.referralEarnings || 0).toFixed(2); referralCodeDisplay.textContent = userData.referralCode || '...'; referralEarningsDisplay.textContent = (userData.referralEarnings || 0).toFixed(2); await fetchAndRenderTasks(userData.completedTasks || []); } else { console.log("User document does not exist, might be signing up."); } }, error => { console.error("Error listening to user data:", error); showToast("Could not load user data. Check console."); }); showAppUI(true); showScreen('home'); } else { currentUser = null; userData = {}; if (unsubscribeUserData) unsubscribeUserData(); if (activeGameSession.timerId) { clearInterval(activeGameSession.timerId); } activeGameSession = { gameId: null, timerId: null, startTime: null }; showAppUI(false); toggleAuthForms('login'); } });
         
-        // --- 5. UI & HISTORY RENDERING FUNCTIONS (UNCHANGED) ---
+        // --- 5. UI & HISTORY RENDERING FUNCTIONS ---
         function generateWheel() { const segmentCount = wheelPrizes.length; const segmentAngle = 360 / segmentCount; earningWheel.innerHTML = ''; let gradientParts = []; let currentAngle = 0; wheelPrizes.forEach((prize, index) => { const rotation = currentAngle; const segment = document.createElement('div'); segment.className = 'wheel-segment'; segment.style.setProperty('--rotation', `${rotation}deg`); segment.style.setProperty('--segment-angle', `${segmentAngle}deg`); segment.innerHTML = `<span>${prize.label}</span>`; earningWheel.appendChild(segment); gradientParts.push(`${prize.color} ${currentAngle}deg ${currentAngle + segmentAngle}deg`); currentAngle += segmentAngle; }); earningWheel.style.background = `conic-gradient(from -${segmentAngle/2}deg, ${gradientParts.join(', ')})`; };
         async function renderSpinHistory() { if (!currentUser) return; spinHistoryList.innerHTML = '<p>Loading...</p>'; const spinsRef = db.collection('users').doc(currentUser.uid).collection('spins'); try { const snapshot = await spinsRef.orderBy('timestamp', 'desc').limit(10).get(); if (snapshot.empty) { spinHistoryList.innerHTML = '<p>No spin history yet.</p>'; return; } spinHistoryList.innerHTML = ''; snapshot.forEach(doc => { const spin = doc.data(); const item = document.createElement('div'); item.className = 'history-item'; const amountText = spin.amount > 0 ? `+ ₹${spin.amount.toFixed(2)}` : 'Try Again'; const amountClass = spin.amount > 0 ? 'win' : 'lose'; const date = spin.timestamp ? new Date(spin.timestamp.toDate()).toLocaleString() : 'Just now'; item.innerHTML = `<div class="history-info"><span class="history-amount spin-history-amount ${amountClass}">${amountText}</span></div><span class="history-date">${date}</span>`; spinHistoryList.appendChild(item); }); } catch (error) { console.error("Error fetching spin history:", error); spinHistoryList.innerHTML = '<p>Could not load history.</p>'; } }
         async function renderBonusHistory() { if (!currentUser) return; dailyBonusHistoryList.innerHTML = '<p>Loading history...</p>'; const bonusRef = db.collection('users').doc(currentUser.uid).collection('dailyBonuses'); try { const snapshot = await bonusRef.orderBy('claimedAt', 'desc').limit(30).get(); if (snapshot.empty) { dailyBonusHistoryList.innerHTML = '<p>No daily bonuses claimed yet.</p>'; return; } dailyBonusHistoryList.innerHTML = ''; snapshot.forEach(doc => { const bonus = doc.data(); const item = document.createElement('div'); item.className = 'history-item'; const date = bonus.claimedAt ? new Date(bonus.claimedAt.toDate()).toLocaleDateString() : 'N/A'; item.innerHTML = `<div class="history-info"><span class="history-amount">+ ₹${bonus.amount.toFixed(2)}</span><span class="history-date">Claimed on ${date}</span></div><span class="history-status completed">Claimed</span>`; dailyBonusHistoryList.appendChild(item); }); } catch (error) { console.error("Error fetching bonus history:", error); dailyBonusHistoryList.innerHTML = '<p>Could not load history.</p>'; } }
 
-        // --- 6. EVENT HANDLERS & ACTIONS (UNCHANGED SECTIONS) ---
+        // --- 6. EVENT HANDLERS & ACTIONS ---
         const generateReferralCode = () => Math.random().toString(36).substring(2, 8).toUpperCase();
-        async function handleRegistration() { const username = registerUsernameInput.value.trim(); const email = registerEmailInput.value.trim(); const password = registerPasswordInput.value; const referralCode = registerReferralCodeInput.value.trim().toUpperCase(); if (password !== registerConfirmPasswordInput.value) { showToast("Passwords do not match."); return; } if (!username || !email || !password) { showToast("All fields are required."); return; } let initialBalance = 0; let referredBy = null; try { if (referralCode) { const referrerQuery = await db.collection('users').where('referralCode', '==', referralCode).limit(1).get(); if (!referrerQuery.empty) { const referrerDoc = referrerQuery.docs[0]; referredBy = referrerDoc.id; initialBalance += REFERRAL_BONUS_FOR_NEW_USER; const referrerRef = db.collection('users').doc(referredBy); await referrerRef.update({ balance: firebase.firestore.FieldValue.increment(REFERRAL_BONUS_FOR_REFERRER), totalEarned: firebase.firestore.FieldValue.increment(REFERRAL_BONUS_FOR_REFERRER), referralEarnings: firebase.firestore.FieldValue.increment(REFERRAL_BONUS_FOR_REFERRER) }); showToast(`Bonus for your referrer!`); } else { showToast("Invalid referral code, proceeding without bonus."); } } const cred = await auth.createUserWithEmailAndPassword(email, password); const userRef = db.collection('users').doc(cred.user.uid); await userRef.set({ username, email, balance: initialBalance, totalEarned: initialBalance, completedTasks: [], memberSince: firebase.firestore.FieldValue.serverTimestamp(), spinsLeft: 5, lastSpinDate: null, referralCode: generateReferralCode(), referralEarnings: 0, referredBy: referredBy }); } catch (err) { showToast(err.message); } }
+        
+        // =========================================================================
+        // ===== FINAL SECURE handleRegistration FUNCTION ==========================
+        // =========================================================================
+        async function handleRegistration() {
+            const username = registerUsernameInput.value.trim();
+            const email = registerEmailInput.value.trim();
+            const password = registerPasswordInput.value;
+            const referralCode = registerReferralCodeInput.value.trim().toUpperCase();
+
+            if (password !== registerConfirmPasswordInput.value) {
+                showToast("Passwords do not match."); return;
+            }
+            if (!username || !email || !password) {
+                showToast("All fields are required."); return;
+            }
+
+            try {
+                // Step 1: Create user in Auth
+                const cred = await auth.createUserWithEmailAndPassword(email, password);
+                const newUserRef = db.collection('users').doc(cred.user.uid);
+                const newOwnReferralCode = generateReferralCode();
+                const newReferralCodeRef = db.collection('referralCodes').doc(newOwnReferralCode);
+
+                let initialBalance = 0;
+                let referredBy = null;
+
+                // Step 2: Handle referral logic
+                if (referralCode) {
+                    // SECURE: Check the public collection, not the private user data
+                    const referrerCodeDoc = await db.collection('referralCodes').doc(referralCode).get();
+
+                    if (referrerCodeDoc.exists) {
+                        referredBy = referrerCodeDoc.data().userId;
+                        const referrerUserRef = db.collection('users').doc(referredBy);
+                        initialBalance = REFERRAL_BONUS_FOR_NEW_USER;
+
+                        await db.runTransaction(async (transaction) => {
+                            // Action 1: Update the referrer's balance
+                            transaction.update(referrerUserRef, {
+                                balance: firebase.firestore.FieldValue.increment(REFERRAL_BONUS_FOR_REFERRER),
+                                totalEarned: firebase.firestore.FieldValue.increment(REFERRAL_BONUS_FOR_REFERRER),
+                                referralEarnings: firebase.firestore.FieldValue.increment(REFERRAL_BONUS_FOR_REFERRER)
+                            });
+                            // Action 2: Create the new user's document
+                            transaction.set(newUserRef, { username, email, balance: initialBalance, totalEarned: initialBalance, completedTasks: [], memberSince: firebase.firestore.FieldValue.serverTimestamp(), spinsLeft: 5, lastSpinDate: null, referralCode: newOwnReferralCode, referralEarnings: 0, referredBy: referredBy });
+                            // Action 3: Create the new user's public referral code document
+                            transaction.set(newReferralCodeRef, { userId: cred.user.uid });
+                        });
+                        showToast(`Referral successful! You received a bonus!`);
+                    } else {
+                        // Referral code is invalid, proceed without bonus
+                        await db.runTransaction(async (transaction) => {
+                           transaction.set(newUserRef, { username, email, balance: 0, totalEarned: 0, completedTasks: [], memberSince: firebase.firestore.FieldValue.serverTimestamp(), spinsLeft: 5, lastSpinDate: null, referralCode: newOwnReferralCode, referralEarnings: 0, referredBy: null });
+                           transaction.set(newReferralCodeRef, { userId: cred.user.uid });
+                        });
+                        showToast("Invalid referral code. Account created without bonus.");
+                    }
+                } else {
+                    // No referral code was entered
+                    await db.runTransaction(async (transaction) => {
+                        transaction.set(newUserRef, { username, email, balance: 0, totalEarned: 0, completedTasks: [], memberSince: firebase.firestore.FieldValue.serverTimestamp(), spinsLeft: 5, lastSpinDate: null, referralCode: newOwnReferralCode, referralEarnings: 0, referredBy: null });
+                        transaction.set(newReferralCodeRef, { userId: cred.user.uid });
+                    });
+                }
+            } catch (err) {
+                console.error("Registration Error: ", err);
+                showToast(err.message);
+            }
+        }
+        
         async function handleLogin() { const email = loginEmailInput.value.trim(); const password = loginPasswordInput.value; if (!email || !password) { showToast("Please enter email and password."); return; } try { await auth.signInWithEmailAndPassword(email, password); } catch (err) { showToast(err.message); } }
         async function handleCompleteTask(taskId, button) { const task = availableTasks.find(t => t.id === taskId); if (!task || !currentUser) return; button.disabled = true; button.textContent = 'Processing...'; window.open(task.buttonUrl, '_blank'); setTimeout(async () => { const userRef = db.collection('users').doc(currentUser.uid); try { await db.runTransaction(async (transaction) => { const userDoc = await transaction.get(userRef); if (!userDoc.exists) throw "User not found!"; const completedTasks = userDoc.data().completedTasks || []; if (completedTasks.includes(task.id)) { showToast("Task already completed."); return; } transaction.update(userRef, { balance: firebase.firestore.FieldValue.increment(task.reward), totalEarned: firebase.firestore.FieldValue.increment(task.reward), completedTasks: firebase.firestore.FieldValue.arrayUnion(task.id) }); }); showToast(`+ ₹${task.reward.toFixed(2)} added!`); } catch (error) { showToast("Error: " + error); button.disabled = false; button.textContent = 'Complete Task'; } }, 3000); }
         async function handleWithdrawal() { const amount = parseFloat(withdrawAmountInput.value), upiId = upiIdInput.value.trim(); if (isNaN(amount) || amount <= 0) { showToast("Please enter a valid amount."); return; } if (!upiId || !upiId.includes('@')) { showToast("Please enter a valid UPI ID."); return; } if (!currentUser) { showToast("You must be logged in."); return; } withdrawButton.disabled = true; withdrawButton.textContent = "Processing..."; const userRef = db.collection('users').doc(currentUser.uid), withdrawalRef = db.collection('withdrawals').doc(); try { await db.runTransaction(async (t) => { const userDoc = await t.get(userRef); if (!userDoc.exists) throw "User not found!"; if (userDoc.data().balance < amount) throw "Insufficient balance."; t.update(userRef, { balance: firebase.firestore.FieldValue.increment(-amount) }); t.set(withdrawalRef, { userId: currentUser.uid, username: userDoc.data().username, amount: amount, upiId: upiId, status: "pending", requestedAt: firebase.firestore.FieldValue.serverTimestamp() }); }); showToast("Withdrawal request submitted!"); withdrawAmountInput.value = ''; upiIdInput.value = ''; } catch (error) { showToast("Error: " + String(error.message || error)); } finally { withdrawButton.disabled = false; withdrawButton.textContent = "Request Withdrawal"; } }
@@ -269,10 +339,9 @@
         async function handleSpinWheel() { if (isSpinning || !currentUser) return; const userRef = db.collection('users').doc(currentUser.uid); const userDoc = await userRef.get(); if (!userDoc.exists || (userDoc.data().spinsLeft || 0) <= 0) { showToast("No spins left for today."); return; } isSpinning = true; spinWheelButton.disabled = true; spinWheelButton.textContent = 'Spinning...'; await userRef.update({ spinsLeft: firebase.firestore.FieldValue.increment(-1) }); spinsLeftDisplay.textContent = parseInt(spinsLeftDisplay.textContent) - 1; const segmentAngle = 360 / wheelPrizes.length; const randomSegment = Math.floor(Math.random() * wheelPrizes.length); const prize = wheelPrizes[randomSegment]; const stopAngle = (randomSegment * segmentAngle) + (segmentAngle / 2); const currentRotation = earningWheel.currentRotation || 0; const revolutions = 5 * 360; const finalRotation = revolutions + stopAngle - (currentRotation % 360); earningWheel.style.transition = 'transform 5s cubic-bezier(0.25, 1, 0.5, 1)'; earningWheel.style.transform = `rotate(${currentRotation + finalRotation}deg)`; earningWheel.currentRotation = currentRotation + finalRotation; setTimeout(async () => { isSpinning = false; const message = prize.amount > 0 ? `You won ₹${prize.amount.toFixed(2)}!` : "Better luck next time!"; showToast(message); const spinData = { amount: prize.amount, timestamp: firebase.firestore.FieldValue.serverTimestamp() }; await userRef.collection('spins').add(spinData); if (prize.amount > 0) { await userRef.update({ balance: firebase.firestore.FieldValue.increment(prize.amount), totalEarned: firebase.firestore.FieldValue.increment(prize.amount) }); } if (parseInt(spinsLeftDisplay.textContent) > 0) { spinWheelButton.disabled = false; spinWheelButton.textContent = 'SPIN'; } else { spinWheelButton.textContent = 'No Spins Left'; } await renderSpinHistory(); }, 5500); }
 
 
-        // --- PLAY & EARN (LINK-BASED) LOGIC (UPDATED) ---
+        // --- PLAY & EARN (LINK-BASED) LOGIC ---
         async function fetchAndRenderGames() {
             try {
-                // Fetch games, which must have a 'gameUrl' field.
                 const gamesSnapshot = await db.collection('games').orderBy("createdAt", "desc").get();
                 availableGames = [];
                 gamesSnapshot.forEach(doc => availableGames.push({ id: doc.id, ...doc.data() }));
@@ -314,75 +383,37 @@
         }
         
         async function handleGamePlayStop(gameId, button) {
-            // Case 1: A different game is already running
             if (activeGameSession.timerId && activeGameSession.gameId !== gameId) {
-                showToast("Please stop the current game before starting another.");
-                return;
+                showToast("Please stop the current game before starting another."); return;
             }
-
-            // Case 2: The current game is stopped
             if (activeGameSession.timerId && activeGameSession.gameId === gameId) {
                 clearInterval(activeGameSession.timerId);
-                button.disabled = true;
-                button.textContent = 'Processing...';
-
+                button.disabled = true; button.textContent = 'Processing...';
                 const game = availableGames.find(g => g.id === gameId);
                 const rewardPerMinute = game.rewardPerMinute || 0;
                 const durationSeconds = (Date.now() - activeGameSession.startTime) / 1000;
                 const completedMinutes = Math.floor(durationSeconds / 60);
-                
-                // Reset session state immediately
                 activeGameSession = { gameId: null, timerId: null, startTime: null };
-
                 if (completedMinutes > 0 && rewardPerMinute > 0) {
                     const totalReward = completedMinutes * rewardPerMinute;
                     try {
                         const userRef = db.collection('users').doc(currentUser.uid);
-                        await userRef.update({
-                            balance: firebase.firestore.FieldValue.increment(totalReward),
-                            totalEarned: firebase.firestore.FieldValue.increment(totalReward)
-                        });
-                        await userRef.collection('gamePlays').add({
-                            gameId: gameId, durationSeconds: Math.round(durationSeconds),
-                            minutesRewarded: completedMinutes, amountEarned: totalReward,
-                            playedAt: firebase.firestore.FieldValue.serverTimestamp()
-                        });
+                        await userRef.update({ balance: firebase.firestore.FieldValue.increment(totalReward), totalEarned: firebase.firestore.FieldValue.increment(totalReward) });
+                        await userRef.collection('gamePlays').add({ gameId: gameId, durationSeconds: Math.round(durationSeconds), minutesRewarded: completedMinutes, amountEarned: totalReward, playedAt: firebase.firestore.FieldValue.serverTimestamp() });
                         showToast(`+ ₹${totalReward.toFixed(2)} added for playing ${completedMinutes} minute(s)!`);
-                    } catch (error) {
-                        showToast("Error updating balance. Please try again.");
-                        console.error("Error giving game reward:", error);
-                    }
-                } else {
-                    showToast("Session ended. Play for at least 1 minute to earn a reward.");
-                }
-
-                // Reset UI
-                button.disabled = false;
-                button.classList.remove('is-playing');
-                button.textContent = 'Play';
+                    } catch (error) { showToast("Error updating balance. Please try again."); console.error("Error giving game reward:", error); }
+                } else { showToast("Session ended. Play for at least 1 minute to earn a reward."); }
+                button.disabled = false; button.classList.remove('is-playing'); button.textContent = 'Play';
                 document.querySelector(`#game-card-${gameId} .game-timer`).classList.add('hidden');
-            } 
-            // Case 3: No game is running, so we start one
-            else {
+            } else {
                 const game = availableGames.find(g => g.id === gameId);
-                if (!game || !game.gameUrl) {
-                    showToast("This game is not available right now.");
-                    return;
-                }
-
+                if (!game || !game.gameUrl) { showToast("This game is not available right now."); return; }
                 window.open(game.gameUrl, '_blank');
                 showToast("Game opened in a new tab. Come back here to claim your reward!");
-
-                activeGameSession.gameId = gameId;
-                activeGameSession.startTime = Date.now();
-                
-                button.textContent = 'Stop & Claim';
-                button.classList.add('is-playing');
-                
+                activeGameSession.gameId = gameId; activeGameSession.startTime = Date.now();
+                button.textContent = 'Stop & Claim'; button.classList.add('is-playing');
                 const timerEl = document.querySelector(`#game-card-${gameId} .game-timer`);
-                timerEl.classList.remove('hidden');
-                timerEl.textContent = 'Time: 00:00';
-
+                timerEl.classList.remove('hidden'); timerEl.textContent = 'Time: 00:00';
                 activeGameSession.timerId = setInterval(() => {
                     const elapsedSeconds = (Date.now() - activeGameSession.startTime) / 1000;
                     timerEl.textContent = `Time: ${formatTime(elapsedSeconds)}`;
@@ -392,23 +423,13 @@
 
         function forceStopGameSession() {
             if (!activeGameSession.gameId) return;
-
             showToast("Game session stopped due to navigation. No reward given.");
-
             const button = document.querySelector(`.task-button[data-game-id="${activeGameSession.gameId}"]`);
             const timerEl = document.querySelector(`#game-card-${activeGameSession.gameId} .game-timer`);
-
             clearInterval(activeGameSession.timerId);
             activeGameSession = { gameId: null, timerId: null, startTime: null };
-
-            if(button) {
-                button.disabled = false;
-                button.classList.remove('is-playing');
-                button.textContent = 'Play';
-            }
-            if(timerEl) {
-                timerEl.classList.add('hidden');
-            }
+            if(button) { button.disabled = false; button.classList.remove('is-playing'); button.textContent = 'Play'; }
+            if(timerEl) { timerEl.classList.add('hidden'); }
         }
 
         // --- 7. EVENT LISTENERS & HELPER FUNCTIONS ---
@@ -420,20 +441,14 @@
         const showToast = (message) => { const t = document.getElementById('toast-notification'); t.textContent = message; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); };
         
         window.showScreen = (screenId) => { 
-            // If leaving games screen, ensure any active session is stopped without reward.
-            if (activeGameSession.gameId && screenId !== 'games') {
-                forceStopGameSession();
-            }
-
+            if (activeGameSession.gameId && screenId !== 'games') { forceStopGameSession(); }
             document.querySelectorAll('.content-screen').forEach(s => s.classList.add('hidden'));
             document.getElementById(`${screenId}-screen`).classList.remove('hidden');
             document.querySelectorAll('.nav-button').forEach(b => b.classList.remove('active'));
-            
             const navScreenMap = {'daily-bonus-history': 'home', 'wheel': 'home', 'daily-bonus': 'home', 'referral': 'home', 'games': 'home'};
             const navTarget = navScreenMap[screenId] || screenId;
             const activeNavButton = document.querySelector(`.nav-button[data-screen="${navTarget}"]`);
             if (activeNavButton) { activeNavButton.classList.add('active'); }
-            
             if (screenId === 'daily-bonus') setupBonusScreen();
             if (screenId === 'wheel') { setupWheelScreen(); renderSpinHistory(); }
             if (screenId === 'daily-bonus-history') renderBonusHistory();

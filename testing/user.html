@@ -16,223 +16,339 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
         body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #161623; color: var(--text-light); }
         .mobile-container { width: 375px; height: 812px; background: var(--background-dark); border-radius: 40px; box-shadow: 0 15px 50px rgba(0,0,0,0.5); overflow: hidden; position: relative; display: flex; flex-direction: column; }
-        .background-shapes { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
-        .background-shapes .shape { position: absolute; border-radius: 50%; filter: blur(2px); animation: move 20s linear infinite; }
+        .background-shapes { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; overflow: hidden; }
+        .background-shapes .shape { position: absolute; border-radius: 50%; filter: blur(2px); animation: move 20s linear infinite alternate; }
         .background-shapes .shape1 { width: 250px; height: 250px; background: var(--primary-color); top: -50px; left: -80px; animation-duration: 25s; }
         .background-shapes .shape2 { width: 200px; height: 200px; background: var(--secondary-color); bottom: -50px; right: -60px; animation-duration: 20s; }
-        @keyframes move { 0% { transform: translateY(0) translateX(0); } 50% { transform: translateY(50px) translateX(-50px); } 100% { transform: translateY(0) translateX(0); } }
+        @keyframes move { 100% { transform: translateY(40px) translateX(-40px) rotate(180deg); } }
         .app-screen-wrapper { position: relative; z-index: 2; height: 100%; display: flex; flex-direction: column; }
-        .auth-screen { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; height: 100%; }
-        .glass-card { background: var(--glass-bg); backdrop-filter: blur(15px); border: 1px solid var(--glass-border); border-radius: 20px; padding: 20px; box-shadow: 0 8px 32px 0 var(--shadow-color); margin-bottom: 20px; }
-        .btn-primary { width: 100%; padding: 15px; border: none; border-radius: 15px; font-size: 18px; font-weight: 600; cursor: pointer; background: linear-gradient(45deg, var(--primary-color), var(--secondary-color)); color: var(--text-dark); }
         .hidden { display: none !important; }
+        .auth-screen { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; height: 100%; position: absolute; width: 100%; transition: opacity 0.3s ease; }
+        .auth-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        .glass-card { background: var(--glass-bg); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid var(--glass-border); border-radius: 20px; padding: 20px; box-shadow: 0 8px 32px 0 var(--shadow-color); margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group input { width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--text-light); font-size: 16px; }
+        .btn-primary { width: 100%; padding: 15px; border: none; border-radius: 15px; font-size: 18px; font-weight: 600; cursor: pointer; background: linear-gradient(45deg, var(--primary-color), var(--secondary-color)); color: var(--text-dark); transition: all 0.3s ease; }
+        .btn-primary:disabled { background: #555; cursor: not-allowed; }
+        .app-header { padding: 25px 20px 15px; display: flex; justify-content: space-between; align-items: center; }
         #main-content { flex-grow: 1; padding: 0 20px 20px; overflow-y: auto; scrollbar-width: none; }
+        #main-content::-webkit-scrollbar { display: none; }
         .bottom-nav { display: flex; padding: 10px 0; margin: 0 20px 10px; border-radius: 25px; }
-        .nav-button { flex: 1; background: none; border: none; color: var(--text-light); display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: all 0.3s ease; font-size: 12px; }
+        .nav-button { flex: 1; background: none; border: none; color: var(--text-light); display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 8px 0; transition: all 0.3s ease; font-size: 12px; }
         .nav-button i { font-size: 22px; margin-bottom: 4px; }
-        .nav-button.active { color: var(--primary-color); }
-        .screen-title { text-align: center; font-size: 22px; font-weight: 600; margin-bottom: 25px; }
-        /* NEW: Loading Spinner */
+        .nav-button.active { color: var(--primary-color); transform: translateY(-5px); }
+        .screen-title { text-align: center; font-size: 22px; font-weight: 600; margin-bottom: 25px; position: relative; }
+        .screen-title.has-back-button { padding-top: 50px; }
+        .back-button { position: absolute; top: 25px; left: 20px; font-size: 24px; cursor: pointer; z-index: 5; }
         .loader-container { display: flex; justify-content: center; align-items: center; padding: 40px; }
         .spinner { width: 40px; height: 40px; border: 4px solid var(--glass-border); border-top: 4px solid var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        /* History Item Styles */
+        @keyframes spin { to { transform: rotate(360deg); } }
         .history-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 5px; border-bottom: 1px solid var(--glass-border); }
+        .history-item:last-child { border-bottom: none; }
         .history-info { display: flex; flex-direction: column; gap: 4px; }
         .history-amount { font-weight: 700; font-size: 16px; }
         .history-date { font-size: 12px; opacity: 0.7; }
         .history-status { font-weight: 700; text-transform: capitalize; }
         .history-status.completed { color: var(--status-completed); }
         .history-status.pending { color: var(--status-pending); }
-        .history-status.rejected { color: var(--status-failed); }
+        .history-status.rejected, .history-status.failed { color: var(--status-failed); }
+        .task-item { display: flex; padding: 15px; gap: 15px; align-items: center; }
+        .task-item-image { width: 80px; height: 80px; object-fit: cover; border-radius: 15px; flex-shrink: 0; }
+        .task-item-content { flex-grow: 1; }
     </style>
 </head>
 <body>
     <div class="mobile-container">
         <div class="background-shapes"><div class="shape shape1"></div><div class="shape shape2"></div></div>
         <div class="app-screen-wrapper">
-            <!-- Auth screens -->
+
+            <!-- Auth Screens -->
             <div id="auth-container">
-                <!-- Login and Register screens code remains the same -->
+                <div id="login-screen" class="auth-screen">
+                    <div class="glass-card"><h1>EarnyHA</h1><p>Login to start earning rewards</p><div class="form-group"><input type="email" id="login-email-input" placeholder="Enter your email"></div><div class="form-group"><input type="password" id="login-password-input" placeholder="Enter your password"></div><button id="login-button" class="btn-primary">Login</button><p>Don't have an account? <span id="switch-to-register" style="color:var(--primary-color); cursor:pointer;">Register</span></p></div>
+                </div>
+                <div id="register-screen" class="auth-screen hidden">
+                    <div class="glass-card"><h1>Register</h1><p>Create your new account</p><div class="form-group"><input type="text" id="register-username-input" placeholder="Choose a username"></div><div class="form-group"><input type="email" id="register-email-input" placeholder="Enter your email"></div><div class="form-group"><input type="password" id="register-password-input" placeholder="Create a password"></div><div class="form-group"><input type="password" id="register-confirm-password-input" placeholder="Confirm password"></div><div class="form-group"><input type="text" id="register-referral-code-input" placeholder="Referral Code (Optional)"></div><button id="register-button" class="btn-primary">Create Account</button><p>Already have an account? <span id="switch-to-login" style="color:var(--primary-color); cursor:pointer;">Login</span></p></div>
+                </div>
             </div>
 
             <!-- Main App UI -->
-            <header class="app-header hidden"><h1>EarnyHA</h1><i class="fa-solid fa-right-from-bracket" id="logout-button"></i></header>
+            <header class="app-header hidden"><h1>EarnyHA</h1><i class="fa-solid fa-right-from-bracket" style="font-size: 24px; cursor: pointer;" id="logout-button"></i></header>
             <main id="main-content" class="hidden">
-                <!-- Home Screen -->
-                <div id="home-screen" class="content-screen">
-                    <div class="glass-card balance-card"><h2>Your Balance</h2><p class="balance-amount"><sup>₹</sup><span id="balance-display">0.00</span></p></div>
-                    <div class="actions-grid">
-                        <!-- Action buttons code remains the same -->
-                    </div>
-                </div>
-                
-                <!-- Tasks Screen -->
-                <div id="tasks-screen" class="content-screen hidden">
-                    <h2 class="screen-title">Complete Tasks</h2>
-                    <div id="task-list-container">
-                        <div class="loader-container"><div class="spinner"></div></div>
-                    </div>
-                </div>
-
-                <!-- Profile Screen -->
-                <div id="profile-screen" class="content-screen hidden">
-                    <h2 class="screen-title">My Profile</h2>
-                    <div class="glass-card profile-info">
-                        <p><strong>Username:</strong> <span id="profile-username"></span></p>
-                        <p><strong>Email:</strong> <span id="profile-email"></span></p>
-                        <p><strong>Joined On:</strong> <span id="profile-joined-date"></span></p>
-                        <p><strong>Total Earned:</strong> ₹<span id="profile-total-earned"></span></p>
-                        <p><strong>Referral Earnings:</strong> ₹<span id="profile-referral-earnings"></span></p>
-                    </div>
-                    <!-- NEW: Withdrawal History Button -->
-                    <div class="glass-card" style="padding: 0;">
-                        <button class="nav-button" onclick="showScreen('withdrawal-history')" style="flex-direction: row; justify-content: space-between; width: 100%; padding: 15px 20px; font-size: 16px;">
-                            <span><i class="fa-solid fa-clock-rotate-left" style="margin-right: 15px;"></i>Withdrawal History</span>
-                            <i class="fa-solid fa-chevron-right"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- NEW: Withdrawal History Screen -->
-                <div id="withdrawal-history-screen" class="content-screen hidden">
-                    <h2 class="screen-title">Withdrawal History</h2>
-                    <div class="glass-card history-list-container">
-                        <div id="withdrawal-history-list">
-                            <div class="loader-container"><div class="spinner"></div></div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Other screens (withdraw, daily-bonus, wheel, etc.) remain largely the same -->
-
+                <div id="home-screen" class="content-screen"></div>
+                <div id="tasks-screen" class="content-screen hidden"></div>
+                <div id="profile-screen" class="content-screen hidden"></div>
+                <div id="withdraw-screen" class="content-screen hidden"></div>
+                <div id="withdrawal-history-screen" class="content-screen hidden"></div>
             </main>
             <nav class="bottom-nav glass-card hidden">
-                <!-- Nav buttons code remains the same -->
+                <button class="nav-button active" data-screen="home"><i class="fa-solid fa-house"></i>Home</button>
+                <button class="nav-button" data-screen="tasks"><i class="fa-solid fa-rocket"></i>Tasks</button>
+                <button class="nav-button" data-screen="withdraw"><i class="fa-solid fa-money-bill-transfer"></i>Withdraw</button>
+                <button class="nav-button" data-screen="profile"><i class="fa-solid fa-user"></i>Profile</button>
             </nav>
         </div>
     </div>
-    <script>
-    // All JS code will be here. Due to length, providing the full logic.
-    document.addEventListener('DOMContentLoaded', () => {
-        // --- 1. FIREBASE CONFIGURATION ---
-        const firebaseConfig = {
-            apiKey: "AIza...", // Replace with your config
-            authDomain: "...",
-            projectId: "...",
-            storageBucket: "...",
-            messagingSenderId: "...",
-            appId: "..."
-        };
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
 
-        // All other JS logic follows, including new functions for history and profile.
-        // The key change is that functions like `fetchAndRenderTasks` will now
-        // show a loader before fetching and hide it after rendering.
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // -----------------------------------------------------------------
+    // --- 1. FIREBASE CONFIGURATION (YAHAN APNA CONFIG PASTE KAREIN) ---
+    // -----------------------------------------------------------------
+    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyAvOCamAwrk7yg-I6RVuMfzE_vKbZlAwwo",
+  authDomain: "earnyha-app.firebaseapp.com",
+  databaseURL: "https://earnyha-app-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "earnyha-app",
+  storageBucket: "earnyha-app.firebasestorage.app",
+  messagingSenderId: "117222358496",
+  appId: "1:117222358496:web:40ef494c898fea61ebff85",
+  measurementId: "G-ME6C5D883Z"
+};
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
 
-        // --- NEW/UPDATED FUNCTIONS ---
+    // --- 2. GLOBAL STATE ---
+    let currentUser = null;
+    let userDataUnsubscribe = null;
+    const REFERRAL_BONUS_FOR_REFERRER = 5.00;
+    const REFERRAL_BONUS_FOR_NEW_USER = 2.00;
 
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                // ... existing logic
-                // NEW: Populate extra profile details
-                const userRef = db.collection('users').doc(user.uid);
-                userRef.onSnapshot(doc => {
-                    if(doc.exists) {
-                        const userData = doc.data();
-                        // ... existing assignments
-                        const joinDate = userData.memberSince ? userData.memberSince.toDate().toLocaleDateString() : 'N/A';
-                        document.getElementById('profile-joined-date').textContent = joinDate;
-                    }
-                });
-            } else {
-                // ... existing logic
-            }
-        });
+    // --- 3. DOM ELEMENTS ---
+    const authContainer = document.getElementById('auth-container');
+    const appHeader = document.querySelector('.app-header');
+    const mainContent = document.getElementById('main-content');
+    const bottomNav = document.querySelector('.bottom-nav');
 
-        async function fetchAndRenderTasks(completedTaskIds) {
-            const container = document.getElementById('task-list-container');
-            container.innerHTML = '<div class="loader-container"><div class="spinner"></div></div>';
-            try {
-                // ... existing fetch logic
-                // after fetching, replace loader with actual task list
-            } catch (error) {
-                container.innerHTML = '<div class="glass-card"><p>Could not load tasks.</p></div>';
-            }
-        };
-        
-        // NEW: Function to render user's withdrawal history
-        async function renderWithdrawalHistory() {
-            if (!currentUser) return;
-            const listEl = document.getElementById('withdrawal-history-list');
-            listEl.innerHTML = '<div class="loader-container"><div class="spinner"></div></div>';
+    // --- 4. TEMPLATES (HTML ko saaf rakhne ke liye) ---
+    const templates = {
+        home: `
+            <div class="glass-card"><h2>Your Current Balance</h2><p style="font-size: 48px; font-weight: 700;"><sup>₹</sup><span id="balance-display">0.00</span></p></div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="glass-card" onclick="alert('Tasks coming soon!')" style="text-align:center; cursor:pointer;"><i class="fa-solid fa-list-check" style="font-size:28px;"></i><p>Earn Now</p></div>
+                <div class="glass-card" onclick="showScreen('withdraw')" style="text-align:center; cursor:pointer;"><i class="fa-solid fa-wallet" style="font-size:28px;"></i><p>Withdraw</p></div>
+            </div>`,
+        tasks: `<h2 class="screen-title">Complete Tasks</h2><div id="task-list-container"><div class="loader-container"><div class="spinner"></div></div></div>`,
+        profile: `
+            <h2 class="screen-title">My Profile</h2>
+            <div class="glass-card">
+                <p><strong>Username:</strong> <span id="profile-username">...</span></p>
+                <p><strong>Email:</strong> <span id="profile-email">...</span></p>
+                <p><strong>Joined On:</strong> <span id="profile-joined-date">...</span></p>
+                <p><strong>Total Earned:</strong> ₹<span id="profile-total-earned">0.00</span></p>
+            </div>
+            <div class="glass-card" onclick="showScreen('withdrawal-history')" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
+                <span><i class="fa-solid fa-clock-rotate-left"></i> Withdrawal History</span>
+                <i class="fa-solid fa-chevron-right"></i>
+            </div>`,
+        withdraw: `
+            <h2 class="screen-title">Withdraw Funds</h2>
+            <div class="glass-card">
+                <div class="form-group"><label>Amount (₹)</label><input type="number" id="withdraw-amount" placeholder="e.g., 50.00"></div>
+                <div class="form-group"><label>UPI ID</label><input type="text" id="upi-id" placeholder="yourname@bank"></div>
+                <button id="withdraw-button" class="btn-primary">Request Withdrawal</button>
+            </div>`,
+        withdrawalHistory: `
+            <i class="fa-solid fa-arrow-left back-button" onclick="showScreen('profile')"></i>
+            <h2 class="screen-title has-back-button">Withdrawal History</h2>
+            <div class="glass-card" id="withdrawal-history-list"><div class="loader-container"><div class="spinner"></div></div></div>`
+    };
 
-            const withdrawalRef = db.collection('withdrawals').where('userId', '==', currentUser.uid).orderBy('requestedAt', 'desc');
-            try {
-                const snapshot = await withdrawalRef.get();
-                if (snapshot.empty) {
-                    listEl.innerHTML = '<p style="text-align:center; padding: 20px 0;">No withdrawal requests found.</p>';
-                    return;
-                }
-                listEl.innerHTML = '';
-                snapshot.forEach(doc => {
-                    const req = doc.data();
-                    const item = document.createElement('div');
-                    item.className = 'history-item';
-                    const date = req.requestedAt ? new Date(req.requestedAt.toDate()).toLocaleString() : 'N/A';
-                    item.innerHTML = `
-                        <div class="history-info">
-                            <span class="history-amount">₹${req.amount.toFixed(2)}</span>
-                            <span class="history-date">${date}</span>
-                        </div>
-                        <span class="history-status ${req.status}">${req.status}</span>`;
-                    listEl.appendChild(item);
-                });
-            } catch (error) {
-                console.error("Error fetching withdrawal history:", error);
-                listEl.innerHTML = '<p style="text-align:center; padding: 20px 0; color: var(--danger-color);">Could not load history.</p>';
-            }
-        }
-        
-        // Update window.showScreen to call the new history function
-        window.showScreen = (screenId) => {
-            // ... existing logic
-            if (screenId === 'withdrawal-history') {
-                renderWithdrawalHistory();
-            }
-            // ... existing logic
-        };
-
-        // WARNING: INSECURE REFERRAL LOGIC as requested
-        async function handleRegistration() {
-            // ... all the input validation
-            try {
-                if (referralCode) {
-                    const referrerQuery = await db.collection('users').where('referralCode', '==', referralCode).limit(1).get();
-                    if (!referrerQuery.empty) {
-                        const referrerDoc = referrerQuery.docs[0];
-                        referredBy = referrerDoc.id;
-                        initialBalance += REFERRAL_BONUS_FOR_NEW_USER;
-
-                        // THIS IS THE INSECURE PART
-                        const referrerRef = db.collection('users').doc(referredBy);
-                        await referrerRef.update({
-                            balance: firebase.firestore.FieldValue.increment(REFERRAL_BONUS_FOR_REFERRER),
-                            totalEarned: firebase.firestore.FieldValue.increment(REFERRAL_BONUS_FOR_REFERRER),
-                            referralEarnings: firebase.firestore.FieldValue.increment(REFERRAL_BONUS_FOR_REFERRER)
-                        });
-                        // END OF INSECURE PART
+    // --- 5. CORE APP LOGIC ---
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            currentUser = user;
+            if (userDataUnsubscribe) userDataUnsubscribe();
+            userDataUnsubscribe = db.collection('users').doc(user.uid).onSnapshot(doc => {
+                if (doc.exists) {
+                    const userData = doc.data();
+                    if (document.getElementById('balance-display')) document.getElementById('balance-display').textContent = userData.balance.toFixed(2);
+                    if (document.getElementById('profile-username')) {
+                        document.getElementById('profile-username').textContent = userData.username;
+                        document.getElementById('profile-email').textContent = userData.email;
+                        document.getElementById('profile-total-earned').textContent = userData.totalEarned.toFixed(2);
+                        document.getElementById('profile-joined-date').textContent = userData.memberSince ? userData.memberSince.toDate().toLocaleDateString() : 'N/A';
                     }
                 }
-                // ... rest of the registration logic
-            } catch (err) {
-                showToast(err.message);
-            }
+            });
+            showAppUI(true);
+            showScreen('home');
+        } else {
+            currentUser = null;
+            if (userDataUnsubscribe) userDataUnsubscribe();
+            showAppUI(false);
+            toggleAuthForms('login');
         }
-
     });
-    </script>
+
+    function showAppUI(isLoggedIn) {
+        authContainer.classList.toggle('hidden', isLoggedIn);
+        appHeader.classList.toggle('hidden', !isLoggedIn);
+        mainContent.classList.toggle('hidden', !isLoggedIn);
+        bottomNav.classList.toggle('hidden', !isLoggedIn);
+    }
+
+    function toggleAuthForms(form) {
+        document.getElementById('login-screen').classList.toggle('hidden', form !== 'login');
+        document.getElementById('register-screen').classList.toggle('hidden', form !== 'register');
+    }
+
+    window.showScreen = (screenId) => {
+        mainContent.querySelector(`#${screenId}-screen`).innerHTML = templates[screenId.replace('-history', '')];
+        document.querySelectorAll('.content-screen').forEach(s => s.classList.add('hidden'));
+        document.getElementById(`${screenId}-screen`).classList.remove('hidden');
+        document.querySelectorAll('.nav-button').forEach(b => b.classList.toggle('active', b.dataset.screen === screenId));
+        
+        if (screenId === 'tasks') fetchTasks();
+        if (screenId === 'withdrawal-history') fetchWithdrawalHistory();
+        if (screenId === 'withdraw') {
+             document.getElementById('withdraw-button').addEventListener('click', handleWithdrawal);
+        }
+    };
+
+    // --- 6. EVENT LISTENERS ---
+    document.getElementById('switch-to-register').addEventListener('click', () => toggleAuthForms('register'));
+    document.getElementById('switch-to-login').addEventListener('click', () => toggleAuthForms('login'));
+    document.getElementById('register-button').addEventListener('click', handleRegistration);
+    document.getElementById('login-button').addEventListener('click', handleLogin);
+    document.getElementById('logout-button').addEventListener('click', () => auth.signOut());
+    document.querySelectorAll('.nav-button').forEach(btn => {
+        btn.addEventListener('click', () => showScreen(btn.dataset.screen));
+    });
+
+    // --- 7. FEATURE LOGIC ---
+    async function handleLogin() {
+        const email = document.getElementById('login-email-input').value;
+        const password = document.getElementById('login-password-input').value;
+        try { await auth.signInWithEmailAndPassword(email, password); } catch (e) { alert(e.message); }
+    }
+    
+    async function handleRegistration() {
+        const username = document.getElementById('register-username-input').value.trim();
+        const email = document.getElementById('register-email-input').value.trim();
+        const password = document.getElementById('register-password-input').value;
+        const confirmPassword = document.getElementById('register-confirm-password-input').value;
+        const referralCode = document.getElementById('register-referral-code-input').value.trim().toUpperCase();
+
+        if (password !== confirmPassword) return alert("Passwords do not match.");
+        if (!username || !email || !password) return alert("All fields are required.");
+
+        let initialBalance = 0;
+        let referredBy = null;
+
+        try {
+            if (referralCode) {
+                const referrerQuery = await db.collection('users').where('referralCode', '==', referralCode).limit(1).get();
+                if (!referrerQuery.empty) {
+                    const referrerDoc = referrerQuery.docs[0];
+                    referredBy = referrerDoc.id;
+                    initialBalance += REFERRAL_BONUS_FOR_NEW_USER;
+                    
+                    // --- WARNING: INSECURE LOGIC AS REQUESTED ---
+                    const referrerRef = db.collection('users').doc(referredBy);
+                    await referrerRef.update({
+                        balance: firebase.firestore.FieldValue.increment(REFERRAL_BONUS_FOR_REFERRER),
+                        totalEarned: firebase.firestore.FieldValue.increment(REFERRAL_BONUS_FOR_REFERRER)
+                    });
+                    // --- END OF INSECURE LOGIC ---
+                } else {
+                    alert("Invalid referral code. Continuing without bonus.");
+                }
+            }
+
+            const cred = await auth.createUserWithEmailAndPassword(email, password);
+            const newReferralCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+            await db.collection('users').doc(cred.user.uid).set({
+                username, email, balance: initialBalance, totalEarned: initialBalance,
+                memberSince: firebase.firestore.FieldValue.serverTimestamp(),
+                referralCode: newReferralCode, referredBy: referredBy
+            });
+        } catch (e) {
+            alert(e.message);
+        }
+    }
+    
+    async function handleWithdrawal() {
+        const amount = parseFloat(document.getElementById('withdraw-amount').value);
+        const upiId = document.getElementById('upi-id').value.trim();
+        if (isNaN(amount) || amount <= 0) return alert("Invalid amount.");
+        if (!upiId) return alert("UPI ID is required.");
+        
+        const userRef = db.collection('users').doc(currentUser.uid);
+        
+        await db.runTransaction(async (transaction) => {
+            const userDoc = await transaction.get(userRef);
+            if (!userDoc.exists) throw "User not found!";
+            if (userDoc.data().balance < amount) throw "Insufficient balance!";
+            
+            transaction.update(userRef, { balance: firebase.firestore.FieldValue.increment(-amount) });
+            
+            const withdrawalRef = db.collection('withdrawals').doc();
+            transaction.set(withdrawalRef, {
+                userId: currentUser.uid,
+                username: userDoc.data().username,
+                amount: amount,
+                upiId: upiId,
+                status: "pending",
+                requestedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        }).then(() => {
+            alert("Withdrawal request submitted!");
+            showScreen('home');
+        }).catch(err => {
+            alert("Error: " + err);
+        });
+    }
+
+    async function fetchTasks() {
+        const container = document.getElementById('task-list-container');
+        try {
+            const snapshot = await db.collection('tasks').get();
+            if (snapshot.empty) {
+                container.innerHTML = '<div class="glass-card"><p>No tasks available right now.</p></div>';
+                return;
+            }
+            container.innerHTML = '';
+            snapshot.forEach(doc => {
+                 // Task rendering logic can be added here
+            });
+            container.innerHTML = '<div class="glass-card"><p>Tasks feature is coming soon!</p></div>';
+
+        } catch (e) {
+            container.innerHTML = '<div class="glass-card"><p>Could not load tasks.</p></div>';
+        }
+    }
+    
+    async function fetchWithdrawalHistory() {
+        const listEl = document.getElementById('withdrawal-history-list');
+        try {
+            const snapshot = await db.collection('withdrawals').where('userId', '==', currentUser.uid).orderBy('requestedAt', 'desc').limit(20).get();
+            if (snapshot.empty) {
+                listEl.innerHTML = '<p style="text-align:center;">No history found.</p>';
+                return;
+            }
+            listEl.innerHTML = '';
+            snapshot.forEach(doc => {
+                const req = doc.data();
+                const item = document.createElement('div');
+                item.className = 'history-item';
+                const date = req.requestedAt ? new Date(req.requestedAt.toDate()).toLocaleString() : 'N/A';
+                item.innerHTML = `
+                    <div class="history-info">
+                        <span class="history-amount">₹${req.amount.toFixed(2)}</span>
+                        <span class="history-date">${date}</span>
+                    </div>
+                    <span class="history-status ${req.status}">${req.status}</span>`;
+                listEl.appendChild(item);
+            });
+        } catch (e) {
+            listEl.innerHTML = `<p style="text-align:center; color: var(--danger-color);">Error loading history.</p>`;
+        }
+    }
+});
+</script>
 </body>
 </html>

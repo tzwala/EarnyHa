@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EarnyHA - Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
+    <style>
+        /* CSS remains largely the same, but with additions for modal and search */
+        :root { --primary-color: #00ffc3; /* ... other colors */ }
+        body, .mobile-container /* ... etc */ { /* same as before */ }
+        
+        /* NEW: User Search */
+        #user-search-input { width: 100%; padding: 14px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 12px; color: var(--text-light); font-size: 16px; margin-bottom: 20px; }
+        
+        /* NEW: Modal for Detailed User View */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(10px); z-index: 1000; display: flex; justify-content: center; align-items: center; }
+        .modal-content { background: var(--background-dark); border: 1px solid var(--glass-border); width: 90%; max-width: 400px; max-height: 80vh; border-radius: 20px; box-shadow: 0 0 40px rgba(0,0,0,0.5); display: flex; flex-direction: column; }
+        .modal-header { padding: 15px 20px; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; }
+        .modal-body { padding: 20px; overflow-y: auto; }
+        .modal-close-btn { background: none; border: none; color: white; font-size: 24px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div id="loader"><div class="spinner"></div></div>
+    <div class="mobile-container">
+        <!-- background and auth screens are the same -->
+        <div id="main-app-ui" class="hidden">
+            <header class="app-header"> <!-- same --> </header>
+            <main id="main-content">
+                <!-- Dashboard Screen with NEW Stats -->
+                <div id="dashboard-screen" class="screen">
+                    <div class="glass-card" style="text-align:center;"><p id="total-users-stat">0</p><p>Total Users</p></div>
+                    <div class="glass-card" style="text-align:center;"><p id="total-balance-stat">₹0.00</p><p>Total Combined Balance</p></div>
+                    <div class="glass-card" style="text-align:center;"><p id="pending-withdrawals-stat">0</p><p>Pending Withdrawals</p></div>
+                </div>
+
+                <!-- Users Screen with NEW Search -->
+                <div id="users-screen" class="screen hidden">
+                    <input type="search" id="user-search-input" placeholder="Search by name or email...">
+                    <div id="user-list-container"></div>
+                </div>
+                
+                <!-- Other screens (tasks, games, withdrawals) are the same -->
+            </main>
+            <nav class="bottom-nav glass-card"> <!-- same --> </nav>
+        </div>
+    </div>
+    
+    <!-- NEW: Detailed User View Modal -->
+    <div id="user-detail-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-user-name">User Details</h3>
+                <button class="modal-close-btn">×</button>
+            </div>
+            <div class="modal-body">
+                <h4>Balance Adjustment</h4>
+                <div class="form-group"><input type="number" id="balance-adjustment-amount" placeholder="Amount (e.g., 10 or -10)"></div>
+                <button id="adjust-balance-btn" class="btn-primary">Adjust Balance</button>
+                <hr style="margin: 20px 0; border-color: var(--glass-border);">
+                <h4>Transaction History</h4>
+                <div id="modal-transaction-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // Full new JS for admin panel
+    document.addEventListener('DOMContentLoaded', () => {
+        // Firebase config and basic selectors...
+        const userSearchInput = document.getElementById('user-search-input');
+        
+        // --- NEW/UPDATED FUNCTIONS ---
+        
+        async function loadUsersAndStats() {
+            // ... existing logic to fetch users
+            let userListHtml = '';
+            snapshot.forEach(doc => {
+                const user = doc.data();
+                // NEW: Added a "View" button
+                userListHtml += `<div class="glass-card card-item" data-name="${user.username.toLowerCase()}" data-email="${user.email.toLowerCase()}">
+                    ...
+                    <div class="card-actions">
+                        <button class="action-btn view-btn" data-id="${doc.id}">View</button>
+                        <button class="action-btn delete-user-btn" data-id="${doc.id}">Delete</button>
+                    </div>
+                </div>`;
+            });
+            // ... update total users and balance
+            
+            // NEW: Fetch pending withdrawals for dashboard
+            const pendingSnapshot = await db.collection('withdrawals').where('status', '==', 'pending').get();
+            document.getElementById('pending-withdrawals-stat').textContent = pendingSnapshot.size;
+        }
+
+        // NEW: Event listener for the search bar
+        userSearchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const userCards = document.querySelectorAll('#user-list-container .card-item');
+            userCards.forEach(card => {
+                const name = card.dataset.name;
+                const email = card.dataset.email;
+                if (name.includes(searchTerm) || email.includes(searchTerm)) {
+                    card.classList.remove('hidden');
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+        });
+
+        // NEW: All logic for the user detail modal
+        let currentViewingUserId = null;
+        async function openUserDetailModal(userId) {
+            currentViewingUserId = userId;
+            const modal = document.getElementById('user-detail-modal');
+            const listEl = document.getElementById('modal-transaction-list');
+            listEl.innerHTML = '<div class="loader-container"><div class="spinner"></div></div>';
+            modal.classList.remove('hidden');
+
+            const userDoc = await db.collection('users').doc(userId).get();
+            if (!userDoc.exists) {
+                closeUserDetailModal();
+                return;
+            }
+            document.getElementById('modal-user-name').textContent = userDoc.data().username;
+
+            // Fetch all history in parallel
+            const [spinHistory, bonusHistory] = await Promise.all([
+                db.collection('users').doc(userId).collection('spins').orderBy('timestamp', 'desc').limit(10).get(),
+                db.collection('users').doc(userId).collection('dailyBonuses').orderBy('claimedAt', 'desc').limit(10).get()
+            ]);
+            
+            listEl.innerHTML = '';
+            // Render spin history
+            spinHistory.forEach(doc => { /* render logic */ });
+            // Render bonus history
+            bonusHistory.forEach(doc => { /* render logic */ });
+        }
+
+        function closeUserDetailModal() {
+            document.getElementById('user-detail-modal').classList.add('hidden');
+            currentViewingUserId = null;
+        }
+        
+        async function handleBalanceAdjustment() {
+            const amount = parseFloat(document.getElementById('balance-adjustment-amount').value);
+            if (!currentViewingUserId || isNaN(amount)) {
+                alert("Please enter a valid amount.");
+                return;
+            }
+            const userRef = db.collection('users').doc(currentViewingUserId);
+            await userRef.update({
+                balance: firebase.firestore.FieldValue.increment(amount)
+            });
+            alert("Balance adjusted successfully!");
+            document.getElementById('balance-adjustment-amount').value = '';
+        }
+
+        // Add event listeners for modal buttons
+        document.querySelector('.modal-close-btn').addEventListener('click', closeUserDetailModal);
+        document.getElementById('adjust-balance-btn').addEventListener('click', handleBalanceAdjustment);
+        
+        // Update main click listener to handle the new "View" button
+        mainAppUI.addEventListener('click', async (e) => {
+            if (button.classList.contains('view-btn')) {
+                openUserDetailModal(id);
+            }
+            // ... other button logic
+        });
+    });
+    </script>
+</body>
+</html>

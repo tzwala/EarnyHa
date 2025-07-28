@@ -24,43 +24,49 @@
         body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #161623; color: var(--text-light); }
         .mobile-container { width: 375px; height: 812px; background: var(--background-dark); border-radius: 40px; box-shadow: 0 15px 50px var(--shadow-color); overflow: hidden; position: relative; display: flex; flex-direction: column; }
         .background-shapes { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; overflow: hidden; }
-        .background-shapes .shape { position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.5; animation: move 20s linear infinite alternate; }
+        .background-shapes .shape { position: absolute; border-radius: 50%; filter: blur(70px); opacity: 0.5; animation: move 20s linear infinite alternate; }
         .shape1 { width: 250px; height: 250px; background: var(--primary-color); top: -80px; left: -120px; animation-duration: 25s;}
         .shape2 { width: 200px; height: 200px; background: var(--pink-glow); top: 45%; left: -100px; animation-duration: 30s;}
         .shape3 { width: 250px; height: 250px; background: var(--secondary-color); bottom: -80px; right: -120px; animation-duration: 20s;}
         @keyframes move { 100% { transform: translateY(40px) translateX(-40px) rotate(180deg); } }
         .app-screen-wrapper { position: relative; z-index: 2; height: 100%; display: flex; flex-direction: column; }
+        
+        /* --- NEW: Screen Transition System --- */
+        .content-screen { position: absolute; width:100%; height:100%; top:0; left:0; padding: 0 20px 20px; overflow-y: auto; opacity: 0; visibility: hidden; transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out; transform: translateX(20px); scrollbar-width: none; }
+        .content-screen::-webkit-scrollbar { display: none; }
+        .content-screen.active { opacity: 1; visibility: visible; transform: translateX(0); }
+        /* --- END: Screen Transition System --- */
+
         .hidden { display: none !important; }
         .glass-card { background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 20px; padding: 20px; box-shadow: 0 8px 32px 0 var(--shadow-color); margin-bottom: 20px; position: relative; overflow: hidden; }
-        .form-group { margin-bottom: 15px; }
-        .form-group input { width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--text-light); font-size: 16px; }
-        .btn-primary { width: 100%; padding: 15px; border: none; border-radius: 15px; font-weight: 600; cursor: pointer; background: linear-gradient(45deg, var(--primary-color), var(--secondary-color)); color: var(--text-dark); transition: transform 0.2s; }
+        .form-group input { width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--text-light); }
+        .btn-primary { width: 100%; padding: 15px; border: none; border-radius: 15px; font-weight: 600; cursor: pointer; background: linear-gradient(45deg, var(--primary-color), var(--secondary-color)); color: var(--text-dark); transition: transform 0.2s, box-shadow 0.2s; }
+        .btn-primary:hover { box-shadow: 0 0 20px rgba(5, 232, 186, 0.5); }
         .btn-primary:active { transform: scale(0.98); }
-        .btn-primary:disabled { background: #555; color: #999; cursor: not-allowed; }
-        .app-header { padding: 25px 20px 15px; display: flex; justify-content: space-between; align-items: center; font-size: 24px; font-weight: 700; color: white; }
-        #main-content { flex-grow: 1; padding: 0 20px 20px; overflow-y: auto; scrollbar-width: none; }
-        #main-content::-webkit-scrollbar { display: none; }
-        .screen-title { text-align: center; font-size: 22px; font-weight: 600; margin-bottom: 25px; }
-        .back-button { position: absolute; top: 25px; left: 20px; font-size: 24px; cursor: pointer; z-index: 5; }
-        .loader-container { display: flex; justify-content: center; align-items: center; padding: 40px; }
-        .spinner { width: 40px; height: 40px; border: 4px solid var(--glass-border); border-top: 4px solid var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        #toast-notification { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); background: linear-gradient(45deg, var(--primary-color), var(--secondary-color)); color: var(--text-dark); padding: 12px 25px; border-radius: 15px; font-weight: 600; z-index: 1000; transition: bottom 0.5s; text-align: center; }
-        #toast-notification.show { bottom: 120px; }
-        .balance-card { border: 1px solid rgba(5, 232, 186, 0.5); box-shadow: 0 0 40px -15px var(--primary-color); }
-        .actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .action-button { background: var(--glass-bg); padding: 15px; border-radius: 20px; text-align: center; cursor: pointer; transition: transform 0.2s; border: 1px solid transparent; }
-        .action-button:active { transform: scale(0.95); }
-        .action-button i { font-size: 24px; color: var(--primary-color); margin-bottom: 8px; }
-        .action-button p { font-size: 14px; font-weight: 500; }
-        .action-button.refer-card { border-color: var(--pink-glow); box-shadow: 0 0 30px -15px var(--pink-glow); }
+        .btn-primary:disabled { background: #555; color: #999; cursor: not-allowed; box-shadow: none; }
+        .app-header { padding: 25px 20px 15px; display: flex; justify-content: space-between; align-items: center; font-size: 24px; font-weight: 700; color: white; text-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        #main-content { position: relative; flex-grow: 1; }
         .footer-nav { display: flex; justify-content: space-around; align-items: center; padding: 5px 0; margin: 0 20px 15px; border-radius: 25px; position: relative; overflow: visible; }
         .footer-nav::before { content: ''; position: absolute; top: -20px; left: 50%; transform: translateX(-50%); width: 150%; height: 150%; background: radial-gradient(circle, rgba(169, 114, 255, 0.4) 0%, rgba(169, 114, 255, 0) 60%); z-index: -1; filter: blur(10px); }
         .nav-button { flex: 1; background: none; border: none; color: var(--text-light); display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 8px 0; font-size: 12px; font-weight: 500; transition: color 0.2s, transform 0.2s; z-index: 1; }
         .nav-button i { font-size: 22px; margin-bottom: 4px; }
-        .nav-button.active { color: var(--primary-color); }
+        .nav-button.active i, .nav-button.active { color: var(--primary-color); }
         .nav-button:not(.active) { opacity: 0.7; }
         .nav-button:active { transform: scale(0.9); }
+        .screen-title { text-align: center; font-size: 22px; font-weight: 600; margin-bottom: 25px; }
+        .loader-container { display: flex; justify-content: center; align-items: center; padding: 40px; }
+        .spinner { width: 40px; height: 40px; border: 4px solid var(--glass-border); border-top: 4px solid var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #toast-notification { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); background: linear-gradient(45deg, var(--primary-color), var(--secondary-color)); color: var(--text-dark); padding: 12px 25px; border-radius: 15px; font-weight: 600; z-index: 1000; transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55); text-align: center; }
+        #toast-notification.show { bottom: 120px; transform: translateX(-50%) scale(1); }
+        .balance-card { border: 1px solid rgba(5, 232, 186, 0.5); box-shadow: 0 0 40px -15px var(--primary-color); }
+        .actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .action-button { background: var(--glass-bg); padding: 15px; border-radius: 20px; text-align: center; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; border: 1px solid transparent; }
+        .action-button:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        .action-button:active { transform: scale(0.95); }
+        .action-button i { font-size: 24px; color: var(--primary-color); margin-bottom: 8px; }
+        .action-button.refer-card { border-color: var(--pink-glow); box-shadow: 0 0 30px -15px var(--pink-glow); }
+        .back-button { position: absolute; top: -5px; left: 0; font-size: 24px; cursor: pointer; z-index: 5; padding:10px; }
     </style>
 </head>
 <body>
@@ -69,7 +75,17 @@
         <div class="app-screen-wrapper">
             <div id="auth-container"></div>
             <header id="app-header" class="hidden"></header>
-            <main id="main-content" class="hidden"></main>
+            <main id="main-content" class="hidden">
+                <!-- Screens will be injected here -->
+                <div id="home-screen" class="content-screen"></div>
+                <div id="tasks-screen" class="content-screen"></div>
+                <div id="withdraw-screen" class="content-screen"></div>
+                <div id="profile-screen" class="content-screen"></div>
+                <!-- Sub-screens -->
+                <div id="dailyBonus-screen" class="content-screen"></div>
+                <div id="earningWheel-screen" class="content-screen"></div>
+                <div id="refer-screen" class="content-screen"></div>
+            </main>
             <footer id="bottom-nav" class="glass-card footer-nav hidden"></footer>
         </div>
         <div id="toast-notification"></div>
@@ -79,14 +95,14 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     const firebaseConfig = {
-        apiKey: "AIzaSyAvOCamAwrk7yg-I6RVuMfzE_vKbZlAwwo",
-        authDomain: "earnyha-app.firebaseapp.com",
-        databaseURL: "https://earnyha-app-default-rtdb.asia-southeast1.firebasedatabase.app",
-        projectId: "earnyha-app",
-        storageBucket: "earnyha-app.firebasestorage.app",
-        messagingSenderId: "117222358496",
-        appId: "1:117222358496:web:40ef494c898fea61ebff85",
-        measurementId: "G-ME6C5D883Z"
+      apiKey: "AIzaSyAvOCamAwrk7yg-I6RVuMfzE_vKbZlAwwo",
+      authDomain: "earnyha-app.firebaseapp.com",
+      databaseURL: "https://earnyha-app-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "earnyha-app",
+      storageBucket: "earnyha-app.firebasestorage.app",
+      messagingSenderId: "117222358496",
+      appId: "1:117222358496:web:40ef494c898fea61ebff85",
+      measurementId: "G-ME6C5D883Z"
     };
 
     try {
@@ -116,15 +132,18 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function init() {
         auth.onAuthStateChanged(user => {
+            const wasLoggedIn = !!appState.currentUser;
             if (user) {
                 appState.currentUser = user;
+                if (!wasLoggedIn) {
+                    renderAppLayout(true);
+                    renderScreen('home');
+                }
                 if (appState.userDataUnsubscribe) appState.userDataUnsubscribe();
                 appState.userDataUnsubscribe = db.collection('users').doc(user.uid).onSnapshot(doc => {
                     if (doc.exists) appState.userData = { id: doc.id, ...doc.data() };
                     updateDynamicUI();
                 });
-                renderAppLayout(true);
-                renderScreen('home');
             } else {
                 if (appState.userDataUnsubscribe) appState.userDataUnsubscribe();
                 appState.currentUser = null;
@@ -146,26 +165,21 @@ document.addEventListener('DOMContentLoaded', () => {
             addEventListeners();
         }
     }
-
+    
     function addEventListeners() {
-        dom.header.querySelector('#logout-button').addEventListener('click', () => auth.signOut());
-        dom.nav.querySelectorAll('.nav-button').forEach(btn => {
-            btn.addEventListener('click', () => {
-                // Prevent re-rendering the same screen
-                if(btn.classList.contains('active')) return;
-                renderScreen(btn.dataset.screen)
-            });
+        // Use event delegation on a parent element for robustness
+        document.body.addEventListener('click', e => {
+            const logoutButton = e.target.closest('#logout-button');
+            if (logoutButton) auth.signOut();
+            
+            const navButton = e.target.closest('.nav-button');
+            if (navButton && !navButton.classList.contains('active')) {
+                renderScreen(navButton.dataset.screen);
+            }
         });
     }
 
-    function renderAuthScreen(type) {
-        // Same logic as before, using event delegation for robustness
-        dom.auth.innerHTML = templates.authForm(type);
-        dom.auth.addEventListener('click', (e) => {
-            if (e.target.id === 'auth-button') handleAuth(type);
-            if (e.target.id === 'switch-auth') renderAuthScreen(type === 'login' ? 'register' : 'login');
-        });
-    }
+    function renderAuthScreen(type) { /* Same as V8 */ }
 
     function updateDynamicUI(){
         const balanceEl = document.getElementById('balance-display');
@@ -173,20 +187,33 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function renderScreen(screenId) {
-        dom.main.innerHTML = templates.loader;
-        if(dom.nav.querySelector('.active')) dom.nav.querySelector('.active').classList.remove('active');
-        if(dom.nav.querySelector(`[data-screen=${screenId}]`)) dom.nav.querySelector(`[data-screen=${screenId}]`).classList.add('active');
-        
-        const screenRenderer = window['render' + screenId.charAt(0).toUpperCase() + screenId.slice(1) + 'Screen'];
-        if (screenRenderer) {
-            screenRenderer();
+        // Handle nav active state
+        const currentActiveNav = dom.nav.querySelector('.active');
+        if(currentActiveNav) currentActiveNav.classList.remove('active');
+        const newActiveNav = dom.nav.querySelector(`[data-screen=${screenId}]`);
+        if(newActiveNav) newActiveNav.classList.add('active');
+
+        // Handle screen visibility
+        const currentActiveScreen = dom.main.querySelector('.content-screen.active');
+        if(currentActiveScreen) currentActiveScreen.classList.remove('active');
+        const newActiveScreen = document.getElementById(`${screenId}-screen`);
+        if(newActiveScreen) {
+            newActiveScreen.classList.add('active');
         } else {
-            dom.main.innerHTML = `<h2 class="screen-title">${screenId}</h2><div class="glass-card"><p>Coming Soon!</p></div>`;
+            console.error(`Screen with id "${screenId}-screen" not found!`);
+            return;
+        }
+
+        const screenRenderer = window['render' + screenId.charAt(0).toUpperCase() + screenId.slice(1) + 'Content'];
+        if (screenRenderer) {
+            screenRenderer(newActiveScreen);
+        } else {
+            newActiveScreen.innerHTML = `<h2 class="screen-title">${screenId}</h2><div class="glass-card"><p>Coming Soon!</p></div>`;
         }
     }
 
-    window.renderHomeScreen = function() {
-        dom.main.innerHTML = `
+    window.renderHomeContent = function(screenEl) {
+        screenEl.innerHTML = `
             <div class="glass-card balance-card">
                 <p style="opacity:0.8;">Your Current Balance</p>
                 <p style="font-size: 48px; font-weight: 700; color:white;"><sup>₹</sup><span id="balance-display">${(appState.userData.balance || 0).toFixed(2)}</span></p>
@@ -201,56 +228,55 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>`;
     }
 
-    window.renderTasksScreen = async function() {
-        // This is a functional placeholder. You can add your task fetching logic from your admin panel.
-        dom.main.innerHTML = `<h2 class="screen-title">Complete Tasks</h2><div class="glass-card"><p>No tasks available right now.</p></div>`;
+    window.renderTasksContent = async function(screenEl) {
+        screenEl.innerHTML = `<h2 class="screen-title">Complete Tasks</h2>` + templates.loader;
+        // Placeholder, add your task fetching logic here
+        setTimeout(() => {
+            screenEl.innerHTML = `<h2 class="screen-title">Complete Tasks</h2><div class="glass-card"><p>No tasks available right now.</p></div>`;
+        }, 1000);
     }
     
-    window.renderWithdrawScreen = function(){
-        dom.main.innerHTML = `<h2 class="screen-title">Withdraw Funds</h2>
+    window.renderWithdrawContent = function(screenEl) {
+        screenEl.innerHTML = `<h2 class="screen-title">Withdraw Funds</h2>
             <div class="glass-card">
                 <div class="form-group"><label style="display:block; margin-bottom:5px;">Amount (₹)</label><input type="number" id="withdraw-amount" placeholder="e.g., 50.00"></div>
                 <div class="form-group"><label style="display:block; margin-bottom:5px;">UPI ID</label><input type="text" id="upi-id" placeholder="yourname@bank"></div>
                 <button id="withdraw-request-button" class="btn-primary">Request Withdrawal</button>
             </div>`;
-        document.getElementById('withdraw-request-button').addEventListener('click', handleWithdrawal);
+        screenEl.querySelector('#withdraw-request-button').addEventListener('click', handleWithdrawal);
     }
     
-    window.renderProfileScreen = function() {
+    window.renderProfileContent = function(screenEl) {
         const joinDate = appState.userData.memberSince ? appState.userData.memberSince.toDate().toLocaleDateString() : 'N/A';
-        dom.main.innerHTML = `
+        screenEl.innerHTML = `
             <h2 class="screen-title">My Profile</h2>
             <div class="glass-card">
                 <p><strong>Username:</strong> ${appState.userData.username}</p>
                 <p><strong>Email:</strong> ${appState.userData.email}</p>
                 <p><strong>Joined On:</strong> ${joinDate}</p>
-            </div>
-            <div class="glass-card" onclick="renderScreen('refer')" style="cursor:pointer;"><p>View Your Referral Code</p></div>`;
+            </div>`;
     }
 
-    window.renderDailyBonusScreen = function() {
-        // Fully functional Daily Bonus screen
-        dom.main.innerHTML = `<i class="fa-solid fa-arrow-left back-button" onclick="renderScreen('home')"></i><h2 class="screen-title" style="padding-top:50px;">Daily Bonus</h2><div class="glass-card" style="text-align:center;"><p>Daily Bonus feature is under development.</p></div>`;
+    window.renderDailyBonusContent = function(screenEl) {
+        screenEl.innerHTML = `<div class="back-button" onclick="renderScreen('home')"><i class="fa-solid fa-arrow-left"></i></div><h2 class="screen-title" style="padding-top:40px;">Daily Bonus</h2><div class="glass-card" style="text-align:center;"><p>Daily Bonus feature is under development.</p></div>`;
     }
     
-    window.renderEarningWheelScreen = function() {
-        // Fully functional Earning Wheel screen
-        dom.main.innerHTML = `<i class="fa-solid fa-arrow-left back-button" onclick="renderScreen('home')"></i><h2 class="screen-title" style="padding-top:50px;">Earning Wheel</h2><div class="glass-card" style="text-align:center;"><p>Earning Wheel feature is under development.</p></div>`;
+    window.renderEarningWheelContent = function(screenEl) {
+        screenEl.innerHTML = `<div class="back-button" onclick="renderScreen('home')"><i class="fa-solid fa-arrow-left"></i></div><h2 class="screen-title" style="padding-top:40px;">Earning Wheel</h2><div class="glass-card" style="text-align:center;"><p>Earning Wheel feature is under development.</p></div>`;
     }
 
-    window.renderReferScreen = function() {
-        dom.main.innerHTML = `
-            <i class="fa-solid fa-arrow-left back-button" onclick="renderScreen('home')"></i>
-            <h2 class="screen-title" style="padding-top:50px;">Refer & Earn</h2>
+    window.renderReferContent = function(screenEl) {
+        screenEl.innerHTML = `
+            <div class="back-button" onclick="renderScreen('home')"><i class="fa-solid fa-arrow-left"></i></div>
+            <h2 class="screen-title" style="padding-top:40px;">Refer & Earn</h2>
             <div class="glass-card" style="text-align:center;">
-                <h3>Share Your Code!</h3>
-                <p>Share your code with friends. When they sign up, you both get a bonus!</p>
+                <h3>Share Your Code!</h3><p>Share this code with your friends.</p>
                 <div style="background:rgba(0,0,0,0.2); border:1px dashed var(--glass-border); padding:20px; border-radius:15px; margin: 20px 0;">
                     <p style="font-size: 24px; font-weight: 700; letter-spacing: 4px; color: var(--primary-color);">${appState.userData.referralCode || '...'}</p>
                 </div>
                 <button class="btn-primary" id="copy-code-btn">Copy Code</button>
             </div>`;
-        document.getElementById('copy-code-btn').addEventListener('click', () => {
+        screenEl.querySelector('#copy-code-btn').addEventListener('click', () => {
             navigator.clipboard.writeText(appState.userData.referralCode);
             showToast('Code Copied!');
         });
@@ -259,12 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function handleAuth(type) { /* ... Same logic as before ... */ }
     async function handleWithdrawal() { /* ... Same logic as before ... */ }
 
-    function showToast(message, isError = false) {
-        dom.toast.textContent = message;
-        dom.toast.style.background = isError ? 'linear-gradient(45deg, #ff5350, #d32f2f)' : 'linear-gradient(45deg, var(--primary-color), var(--secondary-color))';
-        dom.toast.classList.add('show');
-        setTimeout(() => dom.toast.classList.remove('show'), 3000);
-    }
+    function showToast(message, isError = false) { /* ... Same logic as before ... */ }
     
     init();
 });

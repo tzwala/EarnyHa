@@ -9,28 +9,19 @@
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
     <style>
-        :root {
-            --primary-color: #05e8ba;
-            --secondary-color: #a972ff;
-            --pink-glow: #ff57a4;
-            --background-dark: #12121c;
-            --text-light: #f0f0f0;
-            --text-dark: #1f1f1f;
-            --glass-bg: rgba(40, 40, 60, 0.3);
-            --glass-border: rgba(255, 255, 255, 0.1);
-            --shadow-color: rgba(0, 0, 0, 0.2);
-        }
+        :root { --primary-color: #05e8ba; --secondary-color: #a972ff; --pink-glow: #ff57a4; --background-dark: #12121c; --text-light: #f0f0f0; --text-dark: #1f1f1f; --glass-bg: rgba(40, 40, 60, 0.3); --glass-border: rgba(255, 255, 255, 0.1); --shadow-color: rgba(0, 0, 0, 0.2); }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #161623; color: var(--text-light); }
         .mobile-container { width: 375px; height: 812px; background: var(--background-dark); border-radius: 40px; box-shadow: 0 15px 50px var(--shadow-color); overflow: hidden; position: relative; display: flex; flex-direction: column; }
         .background-shapes { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; overflow: hidden; }
-        .background-shapes .shape { position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.5; }
-        .shape1 { width: 250px; height: 250px; background: var(--primary-color); top: -80px; left: -120px; }
-        .shape2 { width: 200px; height: 200px; background: var(--pink-glow); top: 45%; left: -100px; }
-        .shape3 { width: 250px; height: 250px; background: var(--secondary-color); bottom: -80px; right: -120px; }
+        .background-shapes .shape { position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.5; animation: move 20s linear infinite alternate; }
+        .shape1 { width: 250px; height: 250px; background: var(--primary-color); top: -80px; left: -120px; animation-duration: 25s;}
+        .shape2 { width: 200px; height: 200px; background: var(--pink-glow); top: 45%; left: -100px; animation-duration: 30s;}
+        .shape3 { width: 250px; height: 250px; background: var(--secondary-color); bottom: -80px; right: -120px; animation-duration: 20s;}
+        @keyframes move { 100% { transform: translateY(40px) translateX(-40px) rotate(180deg); } }
         .app-screen-wrapper { position: relative; z-index: 2; height: 100%; display: flex; flex-direction: column; }
         .hidden { display: none !important; }
-        .glass-card { background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 20px; padding: 20px; box-shadow: 0 8px 32px 0 var(--shadow-color); margin-bottom: 20px; position: relative; overflow: hidden; }
+        .glass-card { background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 20px; padding: 20px; box-shadow: 0 8px 32px 0 var(--shadow-color); margin-bottom: 20px; position: relative; overflow: hidden; }
         .form-group input { width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--text-light); }
         .btn-primary { width: 100%; padding: 15px; border: none; border-radius: 15px; font-weight: 600; cursor: pointer; background: linear-gradient(45deg, var(--primary-color), var(--secondary-color)); color: var(--text-dark); transition: transform 0.2s; }
         .btn-primary:active { transform: scale(0.98); }
@@ -47,17 +38,11 @@
         .loader-container { display: flex; justify-content: center; align-items: center; padding: 40px; }
         .spinner { width: 40px; height: 40px; border: 4px solid var(--glass-border); border-top: 4px solid var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        #toast-notification { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); background: linear-gradient(45deg, var(--primary-color), var(--secondary-color)); color: var(--text-dark); padding: 12px 25px; border-radius: 15px; font-weight: 600; z-index: 1000; transition: bottom 0.5s; text-align: center; }
-        #toast-notification.show { bottom: 120px; }
-        
-        /* --- LAYOUT FIX: Home Screen Grid --- */
-        .balance-card { border-color: var(--primary-color); box-shadow: 0 0 40px -10px var(--primary-color); }
         .actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .action-button { background: var(--glass-bg); padding: 15px; border-radius: 20px; text-align: center; cursor: pointer; transition: transform 0.2s; border: 1px solid var(--glass-border); }
-        .action-button:active { transform: scale(0.95); }
         .action-button i { font-size: 24px; color: var(--primary-color); margin-bottom: 8px; }
-        .action-button p { font-size: 14px; font-weight: 500; }
-        .action-button.refer-card { border-color: var(--pink-glow); box-shadow: 0 0 30px -10px var(--pink-glow); }
+        #toast-notification { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); background: linear-gradient(45deg, var(--primary-color), var(--secondary-color)); color: var(--text-dark); padding: 12px 25px; border-radius: 15px; font-weight: 600; z-index: 1000; transition: bottom 0.5s; text-align: center; }
+        #toast-notification.show { bottom: 120px; }
     </style>
 </head>
 <body>
@@ -72,10 +57,8 @@
         <div id="toast-notification"></div>
     </div>
 <script>
-// --- EARNYHA V6.0 - FINAL LAYOUT & FUNCTIONALITY ---
 document.addEventListener('DOMContentLoaded', () => {
 
-    // 1. FIREBASE CONFIG (Aapka config yahan daal diya gaya hai)
     const firebaseConfig = {
       apiKey: "AIzaSyAvOCamAwrk7yg-I6RVuMfzE_vKbZlAwwo",
       authDomain: "earnyha-app.firebaseapp.com",
@@ -86,19 +69,21 @@ document.addEventListener('DOMContentLoaded', () => {
       appId: "1:117222358496:web:40ef494c898fea61ebff85",
       measurementId: "G-ME6C5D883Z"
     };
-    firebase.initializeApp(firebaseConfig);
+
+    try {
+        firebase.initializeApp(firebaseConfig);
+    } catch (e) {
+        console.error("Firebase initialization failed. Please check your firebaseConfig.", e);
+        document.body.innerHTML = '<h1>Firebase Config Error. Check Console.</h1>';
+        return;
+    }
+
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    // 2. GLOBAL STATE & CONSTANTS
     const appState = { currentUser: null, userData: {}, userDataUnsubscribe: null, isSpinning: false };
-    const REFERRAL_BONUS = { FOR_REFERRER: 5.00, FOR_NEW_USER: 2.00 };
-    const WHEEL_PRIZES = [ { label: '₹0.5', amount: 0.50, color: '#fdd835' }, { label: 'Try Again', amount: 0, color: '#78909c' }, { label: '₹1', amount: 1.00, color: '#66bb6a' }, { label: '₹0.1', amount: 0.10, color: '#fdd835' }, { label: '₹2', amount: 2.00, color: '#ff7043' }, { label: 'Try Again', amount: 0, color: '#78909c' } ];
-
-    // 3. DOM REFERENCES
     const dom = { auth: document.getElementById('auth-container'), header: document.getElementById('app-header'), main: document.getElementById('main-content'), nav: document.getElementById('bottom-nav'), toast: document.getElementById('toast-notification') };
 
-    // 4. TEMPLATES (Only for reusable parts)
     const templates = {
         header: `<span>EarnyHA</span><i class="fa-solid fa-right-from-bracket" id="logout-button" style="cursor:pointer;"></i>`,
         nav: `
@@ -107,11 +92,26 @@ document.addEventListener('DOMContentLoaded', () => {
             <button class="nav-button" data-screen="withdraw"><i class="fa-solid fa-money-bill-transfer"></i>Withdraw</button>
             <button class="nav-button" data-screen="profile"><i class="fa-solid fa-user"></i>Profile</button>`,
         loader: `<div class="loader-container"><div class="spinner"></div></div>`,
-        authLogin: `<div class="glass-card" style="text-align:center;"><h1>EarnyHA</h1><p>Login to start earning</p><div class="form-group" style="margin-top:20px;"><input type="email" id="login-email-input" placeholder="Enter your email"></div><div class="form-group"><input type="password" id="login-password-input" placeholder="Enter your password"></div><button id="login-button" class="btn-primary">Login</button><p style="margin-top:15px;">Don't have an account? <span id="switch-to-register" style="color:var(--primary-color); cursor:pointer;">Register</span></p></div>`,
-        authRegister: `<div class="glass-card" style="text-align:center;"><h1>Register</h1><p>Create your new account</p><div class="form-group" style="margin-top:20px;"><input type="text" id="register-username-input" placeholder="Choose a username"></div><div class="form-group"><input type="email" id="register-email-input" placeholder="Enter your email"></div><div class="form-group"><input type="password" id="register-password-input" placeholder="Create a password"></div><div class="form-group"><input type="text" id="register-referral-code-input" placeholder="Referral Code (Optional)"></div><button id="register-button" class="btn-primary">Create Account</button><p style="margin-top:15px;">Already have an account? <span id="switch-to-login" style="color:var(--primary-color); cursor:pointer;">Login</span></p></div>`
+        authForm: (type) => {
+            const isLogin = type === 'login';
+            return `<div style="padding:20px; height:100%; display:flex; flex-direction:column; justify-content:center;">
+                <div class="glass-card" style="text-align:center;">
+                    <h1>${isLogin ? 'EarnyHA' : 'Register'}</h1>
+                    <p>${isLogin ? 'Login to start earning' : 'Create your new account'}</p>
+                    ${!isLogin ? '<div class="form-group" style="margin-top:20px;"><input type="text" id="register-username-input" placeholder="Choose a username"></div>' : ''}
+                    <div class="form-group" ${isLogin ? 'style="margin-top:20px;"' : ''}><input type="email" id="email-input" placeholder="Enter your email"></div>
+                    <div class="form-group"><input type="password" id="password-input" placeholder="Create a password"></div>
+                    ${!isLogin ? '<div class="form-group"><input type="text" id="register-referral-code-input" placeholder="Referral Code (Optional)"></div>' : ''}
+                    <button id="auth-button" class="btn-primary">${isLogin ? 'Login' : 'Create Account'}</button>
+                    <p style="margin-top:15px;">
+                        ${isLogin ? "Don't have an account?" : "Already have an account?"}
+                        <span id="switch-auth" style="color:var(--primary-color); cursor:pointer;">${isLogin ? 'Register' : 'Login'}</span>
+                    </p>
+                </div>
+            </div>`;
+        }
     };
-    
-    // 5. APP INITIALIZATION & AUTH
+
     function init() {
         auth.onAuthStateChanged(user => {
             if (user) {
@@ -144,34 +144,27 @@ document.addEventListener('DOMContentLoaded', () => {
             dom.nav.querySelectorAll('.nav-button').forEach(btn => btn.addEventListener('click', () => renderScreen(btn.dataset.screen)));
         }
     }
-    
-    function renderAuthScreen(screen) {
-        dom.auth.innerHTML = `<div style="padding:20px; height:100%; display:flex; flex-direction:column; justify-content:center;">${screen === 'login' ? templates.authLogin : templates.authRegister}</div>`;
-        const loginBtn = document.getElementById('login-button');
-        const regBtn = document.getElementById('register-button');
-        const toReg = document.getElementById('switch-to-register');
-        const toLogin = document.getElementById('switch-to-login');
-        if (loginBtn) loginBtn.addEventListener('click', handleLogin);
-        if (regBtn) regBtn.addEventListener('click', handleRegistration);
-        if (toReg) toReg.addEventListener('click', () => renderAuthScreen('register'));
-        if (toLogin) toLogin.addEventListener('click', () => renderAuthScreen('login'));
+
+    function renderAuthScreen(type) {
+        dom.auth.innerHTML = templates.authForm(type);
+        dom.auth.querySelector('#auth-button').addEventListener('click', () => handleAuth(type));
+        dom.auth.querySelector('#switch-auth').addEventListener('click', () => renderAuthScreen(type === 'login' ? 'register' : 'login'));
     }
-    
+
     function updateDynamicUI(){
         const balanceEl = document.getElementById('balance-display');
         if(balanceEl) balanceEl.textContent = (appState.userData.balance || 0).toFixed(2);
     }
     
-    // 6. SCREEN RENDERING
     function renderScreen(screenId) {
         dom.main.innerHTML = templates.loader;
         dom.nav.querySelector('.active')?.classList.remove('active');
         dom.nav.querySelector(`[data-screen=${screenId}]`)?.classList.add('active');
-        const screenRenderers = { home: renderHomeScreen, tasks: renderTasksScreen, withdraw: renderWithdrawScreen, profile: renderProfileScreen, dailyBonus: renderDailyBonusScreen, earningWheel: renderEarningWheel, refer: renderReferScreen };
-        if(screenRenderers[screenId]) screenRenderers[screenId]();
+        const screenRenderer = window['render' + screenId.charAt(0).toUpperCase() + screenId.slice(1) + 'Screen'];
+        if (screenRenderer) screenRenderer(); else dom.main.innerHTML = `<h1>Not Found</h1>`;
     }
 
-    function renderHomeScreen() {
+    window.renderHomeScreen = function() {
         dom.main.innerHTML = `
             <div class="glass-card balance-card">
                 <p style="opacity:0.8;">Your Current Balance</p>
@@ -180,41 +173,90 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="actions-grid">
                 <div class="action-button" onclick="renderScreen('tasks')"><i class="fa-solid fa-list-check"></i><p>Earn Now</p></div>
                 <div class="action-button" onclick="renderScreen('withdraw')"><i class="fa-solid fa-wallet"></i><p>Withdraw</p></div>
-                <div class="action-button" onclick="renderScreen('dailyBonus')"><i class="fa-solid fa-calendar-day"></i><p>Daily Bonus</p></div>
-                <div class="action-button" onclick="renderScreen('earningWheel')"><i class="fa-solid fa-dharmachakra"></i><p>Earning Wheel</p></div>
-                <div class="action-button refer-card" onclick="renderScreen('refer')"><i class="fa-solid fa-users"></i><p>Refer & Earn</p></div>
+                <div class="action-button" onclick="renderDailyBonusScreen()"><i class="fa-solid fa-calendar-day"></i><p>Daily Bonus</p></div>
+                <div class="action-button" onclick="renderEarningWheelScreen()"><i class="fa-solid fa-dharmachakra"></i><p>Earning Wheel</p></div>
+                <div class="action-button" onclick="renderReferScreen()"><i class="fa-solid fa-users"></i><p>Refer & Earn</p></div>
                 <div class="action-button" onclick="showToast('Coming Soon!')"><i class="fa-solid fa-gamepad"></i><p>Play & Earn</p></div>
             </div>`;
     }
 
-    async function renderTasksScreen(){ /* Same logic as V4 */ }
-    function renderWithdrawScreen(){ /* Same logic as V4 */ }
-    function renderProfileScreen() { /* Same logic as V4 */ }
-    async function renderDailyBonusScreen(){ /* Same logic as V4, but use renderScreen in back button */ }
-    async function renderEarningWheel(){ /* Same logic as V4, but use renderScreen in back button */ }
-    function renderReferScreen(){
-        dom.main.innerHTML = `
-            <i class="fa-solid fa-arrow-left back-button" onclick="renderScreen('home')"></i>
-            <h2 class="screen-title" style="padding-top:50px;">Refer & Earn</h2>
-            <div class="glass-card" style="text-align:center;">
-                <h3>Share Your Code!</h3>
-                <p>Share your code with friends. When they sign up, you both get a bonus!</p>
-                <div style="background:rgba(0,0,0,0.2); border:1px dashed var(--glass-border); padding:20px; border-radius:15px; margin: 20px 0;">
-                    <p style="font-size: 24px; font-weight: 700; letter-spacing: 4px; color: var(--primary-color);">${appState.userData.referralCode || '...'}</p>
-                </div>
-                <button class="btn-primary" onclick="navigator.clipboard.writeText('${appState.userData.referralCode}'); showToast('Code Copied!');">Copy Code</button>
+    window.renderTasksScreen = async function() {
+        // This is a placeholder. You can add your task fetching logic here.
+        dom.main.innerHTML = `<h2 class="screen-title">Complete Tasks</h2><div class="glass-card"><p>No tasks available right now.</p></div>`;
+    }
+    
+    window.renderWithdrawScreen = function(){
+        dom.main.innerHTML = `<h2 class="screen-title">Withdraw Funds</h2>
+            <div class="glass-card">
+                <div class="form-group"><label style="display:block; margin-bottom:5px;">Amount (₹)</label><input type="number" id="withdraw-amount" placeholder="e.g., 50.00"></div>
+                <div class="form-group"><label style="display:block; margin-bottom:5px;">UPI ID</label><input type="text" id="upi-id" placeholder="yourname@bank"></div>
+                <button id="withdraw-request-button" class="btn-primary">Request Withdrawal</button>
             </div>`;
+        document.getElementById('withdraw-request-button').addEventListener('click', handleWithdrawal);
+    }
+    
+    window.renderProfileScreen = function() {
+        const joinDate = appState.userData.memberSince ? appState.userData.memberSince.toDate().toLocaleDateString() : 'N/A';
+        dom.main.innerHTML = `
+            <h2 class="screen-title">My Profile</h2>
+            <div class="glass-card">
+                <p><strong>Username:</strong> ${appState.userData.username}</p>
+                <p><strong>Email:</strong> ${appState.userData.email}</p>
+                <p><strong>Joined On:</strong> ${joinDate}</p>
+            </div>
+            <div class="glass-card" style="text-align:center;"><p>Your referral code: <strong>${appState.userData.referralCode || '...'}</strong></p></div>`;
     }
 
-    // 7. ACTION HANDLERS (all handlers from V4 are reused)
-    async function handleLogin() { /* ... */ }
-    async function handleRegistration() { /* ... */ }
-    async function handleWithdrawal() { /* ... */ }
-    async function handleTaskCompletion(e) { /* ... */ }
-    async function handleBonusClaim(e) { /* ... */ }
-    async function handleSpinWheel(e){ /* ... */ }
+    window.renderDailyBonusScreen = function() {
+        dom.main.innerHTML = `<i class="fa-solid fa-arrow-left back-button" onclick="renderScreen('home')"></i><h2 class="screen-title" style="padding-top:50px;">Daily Bonus</h2>` + templates.loader;
+        // Logic to check and render bonus screen
+    }
     
-    // 8. UTILITY
+    window.renderEarningWheelScreen = function() {
+        dom.main.innerHTML = `<i class="fa-solid fa-arrow-left back-button" onclick="renderScreen('home')"></i><h2 class="screen-title" style="padding-top:50px;">Earning Wheel</h2>` + templates.loader;
+        // Logic to render wheel
+    }
+
+    window.renderReferScreen = function() {
+        // Logic to render refer screen
+    }
+
+    async function handleAuth(type) {
+        const email = document.getElementById('email-input').value;
+        const password = document.getElementById('password-input').value;
+
+        if(type === 'login'){
+            try { await auth.signInWithEmailAndPassword(email, password); } catch (e) { showToast(e.message, true); }
+        } else {
+            const username = document.getElementById('register-username-input').value.trim();
+            const referralCode = document.getElementById('register-referral-code-input').value.trim().toUpperCase();
+            if (!username) return showToast("Username is required.", true);
+
+            try {
+                let initialBalance = 0, referredBy = null;
+                if (referralCode) {
+                    const refQuery = await db.collection('users').where('referralCode', '==', referralCode).limit(1).get();
+                    if (!refQuery.empty) {
+                        referredBy = refQuery.docs[0].id;
+                        initialBalance += 2.00;
+                        await db.collection('users').doc(referredBy).update({
+                            balance: firebase.firestore.FieldValue.increment(5.00)
+                        });
+                    }
+                }
+                const cred = await auth.createUserWithEmailAndPassword(email, password);
+                await db.collection('users').doc(cred.user.uid).set({
+                    username, email, balance: initialBalance, totalEarned: initialBalance,
+                    memberSince: firebase.firestore.FieldValue.serverTimestamp(),
+                    referralCode: Math.random().toString(36).substring(2, 8).toUpperCase(),
+                    referredBy
+                });
+            } catch (e) { showToast(e.message, true); }
+        }
+    }
+
+    async function handleWithdrawal() { /* ... Same logic as before ... */ }
+
     function showToast(message, isError = false) {
         dom.toast.textContent = message;
         dom.toast.style.background = isError ? 'linear-gradient(45deg, #ff5350, #d32f2f)' : 'linear-gradient(45deg, var(--primary-color), var(--secondary-color))';

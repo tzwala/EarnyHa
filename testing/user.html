@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>EarnyHA - Earn Rewards</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -9,8 +9,8 @@
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
     <style>
-        :root { --primary-color: #00ffc3; --secondary-color: #a972ff; --background-dark: #1a1a2e; --text-light: #e0e0e0; --text-dark: #333; --glass-bg: rgba(255, 255, 255, 0.1); --glass-border: rgba(255, 255, 255, 0.2); --shadow-color: rgba(31, 38, 135, 0.37); --status-pending: #fdd835; --status-completed: #66bb6a; --status-failed: #ef5350; }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        :root { --primary-color: #00ffc3; --secondary-color: #a972ff; --background-dark: #1a1a2e; --text-light: #e0e0e0; --text-dark: #333; --glass-bg: rgba(255, 255, 255, 0.1); --glass-border: rgba(255, 255, 255, 0.2); --shadow-color: rgba(31, 38, 135, 0.37); --status-pending: #fdd835; --status-completed: #66bb6a; --status-failed: #ef5350; --danger-color: #ef5350; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #161623; color: var(--text-light); }
         .mobile-container { width: 375px; height: 812px; background: var(--background-dark); border-radius: 40px; box-shadow: 0 15px 50px rgba(0,0,0,0.5); overflow: hidden; position: relative; display: flex; flex-direction: column; }
         .background-shapes { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; overflow:hidden; }
@@ -22,17 +22,32 @@
         .hidden { display: none !important; }
         .auth-screen, .app-header, #main-content, .bottom-nav { transition: opacity 0.3s; }
         .glass-card { background: var(--glass-bg); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid var(--glass-border); border-radius: 20px; padding: 20px; box-shadow: 0 8px 32px 0 var(--shadow-color); margin-bottom: 20px; }
-        .form-group input { width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--text-light); }
-        .btn-primary { width: 100%; padding: 15px; border: none; border-radius: 15px; font-weight: 600; cursor: pointer; background: linear-gradient(45deg, var(--primary-color), var(--secondary-color)); color: var(--text-dark); }
+        .form-group { margin-bottom: 15px; }
+        .form-group input { width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--text-light); font-size: 16px; }
+        .btn-primary { width: 100%; padding: 15px; border: none; border-radius: 15px; font-weight: 600; cursor: pointer; background: linear-gradient(45deg, var(--primary-color), var(--secondary-color)); color: var(--text-dark); transition: transform 0.2s; }
+        .btn-primary:active { transform: scale(0.98); }
+        .btn-primary:disabled { background: #555; color: #999; cursor: not-allowed; }
+        .app-header { padding: 25px 20px 15px; display: flex; justify-content: space-between; align-items: center; }
         #main-content { flex-grow: 1; padding: 0 20px 20px; overflow-y: auto; scrollbar-width: none; }
         #main-content::-webkit-scrollbar { display: none; }
         .bottom-nav { display: flex; padding: 10px 0; margin: 0 20px 10px; border-radius: 25px; }
-        .nav-button { flex: 1; background: none; border: none; color: var(--text-light); display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+        .nav-button { flex: 1; background: none; border: none; color: var(--text-light); display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 8px 0; font-size: 12px; }
+        .nav-button i { font-size: 22px; margin-bottom: 4px; }
         .nav-button.active { color: var(--primary-color); }
+        .screen-title { text-align: center; font-size: 22px; font-weight: 600; margin-bottom: 25px; position: relative; }
+        .back-button { position: absolute; top: 25px; left: 20px; font-size: 24px; cursor: pointer; z-index: 5; }
         .loader-container { display: flex; justify-content: center; align-items: center; padding: 40px; }
         .spinner { width: 40px; height: 40px; border: 4px solid var(--glass-border); border-top: 4px solid var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        #toast-notification { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); background: linear-gradient(45deg, var(--primary-color), var(--secondary-color)); color: var(--text-dark); padding: 12px 25px; border-radius: 15px; font-weight: 600; z-index: 1000; transition: bottom 0.5s; }
+        .task-item { display: flex; padding: 15px; gap: 15px; align-items: center; }
+        .task-item-image { width: 80px; height: 80px; object-fit: cover; border-radius: 15px; flex-shrink: 0; }
+        .task-button { background: linear-gradient(45deg, var(--primary-color), var(--secondary-color)); color: var(--text-dark); border: none; padding: 8px 15px; border-radius: 10px; font-weight: 600; cursor: pointer; }
+        .wheel-container { position: relative; width: 280px; height: 280px; margin: 10px auto; display: flex; justify-content: center; align-items: center; }
+        .wheel-pointer { position: absolute; width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 25px solid var(--primary-color); top: -10px; z-index: 10; filter: drop-shadow(0 -2px 2px rgba(0,0,0,0.3)); }
+        .wheel { position: relative; width: 100%; height: 100%; background: conic-gradient(from 0deg, #fff 0 0); border-radius: 50%; border: 5px solid var(--glass-border); overflow: hidden; transition: transform 5s cubic-bezier(0.25, 1, 0.5, 1); }
+        .wheel-segment { position: absolute; top: 0; left: 0; width: 100%; height: 100%; clip-path: polygon(50% 50%, 100% 50%, 100% 0, 50% 0); transform-origin: 50% 50%; transform: rotate(var(--rotation)); display: flex; justify-content: center; align-items: flex-start; }
+        .wheel-segment span { display: block; transform: rotate(calc(var(--segment-angle)/2)); color: var(--text-dark); font-weight: 700; font-size: 16px; padding-top: 20px; }
+        #toast-notification { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); background: linear-gradient(45deg, var(--primary-color), var(--secondary-color)); color: var(--text-dark); padding: 12px 25px; border-radius: 15px; font-weight: 600; z-index: 1000; transition: bottom 0.5s; text-align: center; }
         #toast-notification.show { bottom: 120px; }
     </style>
 </head>
@@ -40,7 +55,6 @@
     <div class="mobile-container">
         <div class="background-shapes"><div class="shape shape1"></div><div class="shape shape2"></div></div>
         <div class="app-screen-wrapper">
-            <!-- Auth, Header, Main Content, Nav will be populated by JS -->
             <div id="auth-container"></div>
             <header id="app-header" class="hidden"></header>
             <main id="main-content" class="hidden"></main>
@@ -50,89 +64,65 @@
     </div>
 
 <script>
-// --- V3.0 --- COMPLETE RESTRUCTURED JAVASCRIPT ---
 document.addEventListener('DOMContentLoaded', () => {
 
-    // -----------------------------------------------------------------
-    // 1. FIREBASE CONFIG (REPLACE WITH YOURS)
-    // -----------------------------------------------------------------
-    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyAvOCamAwrk7yg-I6RVuMfzE_vKbZlAwwo",
-  authDomain: "earnyha-app.firebaseapp.com",
-  databaseURL: "https://earnyha-app-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "earnyha-app",
-  storageBucket: "earnyha-app.firebasestorage.app",
-  messagingSenderId: "117222358496",
-  appId: "1:117222358496:web:40ef494c898fea61ebff85",
-  measurementId: "G-ME6C5D883Z"
-};
+    // 1. FIREBASE CONFIG (Aapka config yahan daal diya gaya hai)
+    const firebaseConfig = {
+      apiKey: "AIzaSyAvOCamAwrk7yg-I6RVuMfzE_vKbZlAwwo",
+      authDomain: "earnyha-app.firebaseapp.com",
+      databaseURL: "https://earnyha-app-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "earnyha-app",
+      storageBucket: "earnyha-app.firebasestorage.app",
+      messagingSenderId: "117222358496",
+      appId: "1:117222358496:web:40ef494c898fea61ebff85",
+      measurementId: "G-ME6C5D883Z"
+    };
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    // --- 2. GLOBAL APP STATE & CONSTANTS ---
-    const appState = {
-        currentUser: null,
-        userData: {},
-        userDataUnsubscribe: null,
-    };
+    // 2. GLOBAL APP STATE & CONSTANTS
+    const appState = { currentUser: null, userData: {}, userDataUnsubscribe: null, isSpinning: false };
     const REFERRAL_BONUS = { FOR_REFERRER: 5.00, FOR_NEW_USER: 2.00 };
+    const WHEEL_PRIZES = [ { label: '₹0.5', amount: 0.50, color: '#fdd835' }, { label: 'Try Again', amount: 0, color: '#78909c' }, { label: '₹1', amount: 1.00, color: '#66bb6a' }, { label: '₹0.1', amount: 0.10, color: '#fdd835' }, { label: '₹2', amount: 2.00, color: '#ff7043' }, { label: 'Try Again', amount: 0, color: '#78909c' } ];
 
-    // --- 3. DOM ELEMENT REFERENCES ---
-    const dom = {
-        auth: document.getElementById('auth-container'),
-        header: document.getElementById('app-header'),
-        main: document.getElementById('main-content'),
-        nav: document.getElementById('bottom-nav'),
-        toast: document.getElementById('toast-notification'),
-    };
+    // 3. DOM REFERENCES
+    const dom = { auth: document.getElementById('auth-container'), header: document.getElementById('app-header'), main: document.getElementById('main-content'), nav: document.getElementById('bottom-nav'), toast: document.getElementById('toast-notification') };
 
-    // --- 4. HTML TEMPLATES ---
+    // 4. TEMPLATES
     const templates = {
-        header: `<h1>EarnyHA</h1><i class="fa-solid fa-right-from-bracket" style="font-size: 24px; cursor: pointer;" id="logout-button"></i>`,
+        header: `<h1>EarnyHA</h1><i class="fa-solid fa-right-from-bracket" id="logout-button" style="cursor:pointer;"></i>`,
         nav: `
             <button class="nav-button active" data-screen="home"><i class="fa-solid fa-house"></i>Home</button>
             <button class="nav-button" data-screen="tasks"><i class="fa-solid fa-rocket"></i>Tasks</button>
             <button class="nav-button" data-screen="earn"><i class="fa-solid fa-coins"></i>Earn</button>
             <button class="nav-button" data-screen="profile"><i class="fa-solid fa-user"></i>Profile</button>`,
-        authLogin: `<div class="glass-card"><h1>EarnyHA</h1><p>Login to start earning rewards</p><div class="form-group"><input type="email" id="login-email-input" placeholder="Enter your email"></div><div class="form-group"><input type="password" id="login-password-input" placeholder="Enter your password"></div><button id="login-button" class="btn-primary">Login</button><p>Don't have an account? <span id="switch-to-register" style="color:var(--primary-color); cursor:pointer;">Register</span></p></div>`,
-        authRegister: `<div class="glass-card"><h1>Register</h1><p>Create your new account</p><div class="form-group"><input type="text" id="register-username-input" placeholder="Choose a username"></div><div class="form-group"><input type="email" id="register-email-input" placeholder="Enter your email"></div><div class="form-group"><input type="password" id="register-password-input" placeholder="Create a password"></div><div class="form-group"><input type="text" id="register-referral-code-input" placeholder="Referral Code (Optional)"></div><button id="register-button" class="btn-primary">Create Account</button><p>Already have an account? <span id="switch-to-login" style="color:var(--primary-color); cursor:pointer;">Login</span></p></div>`,
         loader: `<div class="loader-container"><div class="spinner"></div></div>`,
+        authLogin: `<div class="glass-card" style="text-align:center;"><h1>EarnyHA</h1><p>Login to start earning rewards</p><div class="form-group"><input type="email" id="login-email-input" placeholder="Enter your email"></div><div class="form-group"><input type="password" id="login-password-input" placeholder="Enter your password"></div><button id="login-button" class="btn-primary">Login</button><p style="margin-top:15px;">Don't have an account? <span id="switch-to-register" style="color:var(--primary-color); cursor:pointer;">Register</span></p></div>`,
+        authRegister: `<div class="glass-card" style="text-align:center;"><h1>Register</h1><p>Create your new account</p><div class="form-group"><input type="text" id="register-username-input" placeholder="Choose a username"></div><div class="form-group"><input type="email" id="register-email-input" placeholder="Enter your email"></div><div class="form-group"><input type="password" id="register-password-input" placeholder="Create a password"></div><div class="form-group"><input type="text" id="register-referral-code-input" placeholder="Referral Code (Optional)"></div><button id="register-button" class="btn-primary">Create Account</button><p style="margin-top:15px;">Already have an account? <span id="switch-to-login" style="color:var(--primary-color); cursor:pointer;">Login</span></p></div>`
     };
-
-    // --- 5. CORE APP INITIALIZATION & AUTH ---
+    
+    // 5. APP INITIALIZATION & AUTH
     function init() {
         auth.onAuthStateChanged(user => {
             if (user) {
                 appState.currentUser = user;
-                attachUserDataListener(user.uid);
+                if (appState.userDataUnsubscribe) appState.userDataUnsubscribe();
+                appState.userDataUnsubscribe = db.collection('users').doc(user.uid).onSnapshot(doc => {
+                    if (doc.exists) appState.userData = { id: doc.id, ...doc.data() };
+                    updateDynamicUI();
+                });
                 renderAppLayout(true);
                 renderScreen('home');
             } else {
                 if (appState.userDataUnsubscribe) appState.userDataUnsubscribe();
                 appState.currentUser = null;
-                appState.userData = {};
                 renderAppLayout(false);
                 renderAuthScreen('login');
             }
         });
     }
 
-    function attachUserDataListener(uid) {
-        appState.userDataUnsubscribe = db.collection('users').doc(uid).onSnapshot(doc => {
-            if (doc.exists) {
-                appState.userData = doc.data();
-                updateDynamicUI();
-            }
-        });
-    }
-    
-    function updateDynamicUI(){
-        const balanceEl = document.getElementById('balance-display');
-        if(balanceEl) balanceEl.textContent = (appState.userData.balance || 0).toFixed(2);
-    }
-    
     function renderAppLayout(isLoggedIn) {
         dom.header.classList.toggle('hidden', !isLoggedIn);
         dom.main.classList.toggle('hidden', !isLoggedIn);
@@ -148,39 +138,36 @@ const firebaseConfig = {
     
     function renderAuthScreen(screen) {
         dom.auth.innerHTML = screen === 'login' ? templates.authLogin : templates.authRegister;
-        if(screen === 'login'){
-            document.getElementById('login-button').addEventListener('click', handleLogin);
-            document.getElementById('switch-to-register').addEventListener('click', () => renderAuthScreen('register'));
-        } else {
-            document.getElementById('register-button').addEventListener('click', handleRegistration);
-            document.getElementById('switch-to-login').addEventListener('click', () => renderAuthScreen('login'));
-        }
+        const loginBtn = document.getElementById('login-button');
+        const regBtn = document.getElementById('register-button');
+        const toReg = document.getElementById('switch-to-register');
+        const toLogin = document.getElementById('switch-to-login');
+        if (loginBtn) loginBtn.addEventListener('click', handleLogin);
+        if (regBtn) regBtn.addEventListener('click', handleRegistration);
+        if (toReg) toReg.addEventListener('click', () => renderAuthScreen('register'));
+        if (toLogin) toLogin.addEventListener('click', () => renderAuthScreen('login'));
     }
-
-    // --- 6. SCREEN RENDERING LOGIC ---
+    
+    function updateDynamicUI(){
+        const balanceEl = document.getElementById('balance-display');
+        if(balanceEl) balanceEl.textContent = (appState.userData.balance || 0).toFixed(2);
+    }
+    
+    // 6. SCREEN RENDERING
     function renderScreen(screenId) {
-        dom.main.innerHTML = templates.loader; // Show loader first
-        dom.nav.querySelector('.active').classList.remove('active');
+        dom.main.innerHTML = templates.loader;
+        dom.nav.querySelector('.active')?.classList.remove('active');
         dom.nav.querySelector(`[data-screen=${screenId}]`).classList.add('active');
 
-        // Based on screenId, render the specific content
-        switch (screenId) {
-            case 'home': renderHomeScreen(); break;
-            case 'tasks': renderTasksScreen(); break;
-            case 'earn': renderEarnScreen(); break;
-            case 'profile': renderProfileScreen(); break;
-            default: dom.main.innerHTML = `<p>Screen not found</p>`;
-        }
+        const screenRenderers = { home: renderHomeScreen, tasks: renderTasksScreen, earn: renderEarnScreen, profile: renderProfileScreen };
+        if(screenRenderers[screenId]) screenRenderers[screenId]();
     }
 
     async function renderHomeScreen() {
         let announcementHTML = '';
         try {
-            const snapshot = await db.collection('announcements').orderBy('createdAt', 'desc').limit(1).get();
-            if(!snapshot.empty){
-                const announcement = snapshot.docs[0].data();
-                announcementHTML = `<div class="glass-card"><p><strong><i class="fa-solid fa-bullhorn"></i> What's New</strong></p><p style="opacity:0.8; font-size:14px; margin-top:5px;">${announcement.message}</p></div>`;
-            }
+            const announcement = await db.collection('announcements').orderBy('createdAt', 'desc').limit(1).get();
+            if (!announcement.empty) announcementHTML = `<div class="glass-card"><p>📢 <strong>What's New</strong></p><p style="opacity:0.8; margin-top:5px;">${announcement.docs[0].data().message}</p></div>`;
         } catch(e){ console.error("Error fetching announcements", e); }
         
         dom.main.innerHTML = `
@@ -189,43 +176,111 @@ const firebaseConfig = {
                 <p style="font-size: 48px; font-weight: 700;"><sup>₹</sup><span id="balance-display">${(appState.userData.balance || 0).toFixed(2)}</span></p>
             </div>
             ${announcementHTML}
-            <div class="glass-card">
-                <p>More ways to earn are coming soon!</p>
+            <div class="glass-card" style="display:flex; justify-content:space-around; text-align:center;">
+                 <div onclick="renderScreen('tasks')" style="cursor:pointer; padding:10px;"> <i class="fa-solid fa-list-check fa-2x"></i> <p>Tasks</p> </div>
+                 <div onclick="renderScreen('earn')" style="cursor:pointer; padding:10px;"> <i class="fa-solid fa-coins fa-2x"></i> <p>Earn More</p> </div>
             </div>`;
     }
+
+    async function renderTasksScreen(){
+        dom.main.innerHTML = `<h2 class="screen-title">Complete Tasks</h2>` + templates.loader;
+        try {
+            const snapshot = await db.collection('tasks').orderBy('createdAt', 'desc').get();
+            let tasksHTML = `<h2 class="screen-title">Complete Tasks</h2>`;
+            if(snapshot.empty){ 
+                tasksHTML += `<div class="glass-card"><p>No tasks available right now.</p></div>`;
+            } else {
+                tasksHTML += snapshot.docs.map(doc => {
+                    const task = {id: doc.id, ...doc.data()};
+                    const isCompleted = appState.userData.completedTasks?.includes(task.id);
+                    return `<div class="glass-card task-item">
+                        <img src="${task.imageUrl}" style="width:60px; height:60px; border-radius:10px; object-fit:cover;">
+                        <div style="flex-grow:1;"><h4>${task.name}</h4><p>+ ₹${task.reward.toFixed(2)}</p></div>
+                        <button class="task-button" data-task-id="${task.id}" data-url="${task.buttonUrl}" data-reward="${task.reward}" ${isCompleted ? 'disabled' : ''}>${isCompleted ? 'Done' : 'Do It'}</button>
+                    </div>`;
+                }).join('');
+            }
+            dom.main.innerHTML = tasksHTML;
+            dom.main.querySelectorAll('.task-button:not([disabled])').forEach(btn => btn.addEventListener('click', handleTaskCompletion));
+        } catch(e) {
+            dom.main.innerHTML = `<h2 class="screen-title">Complete Tasks</h2><div class="glass-card"><p>Could not load tasks.</p></div>`;
+        }
+    }
     
-    function renderTasksScreen() { dom.main.innerHTML = `<div class="glass-card"><p>Tasks feature will be available shortly.</p></div>`; }
-    function renderEarnScreen() { dom.main.innerHTML = `<div class="glass-card"><p>Daily Bonus, Spin Wheel and other features coming soon.</p></div>`; }
+    function renderEarnScreen(){
+         dom.main.innerHTML = `
+            <h2 class="screen-title">More Ways to Earn</h2>
+            <div class="glass-card" onclick="renderDailyBonusScreen()" style="cursor:pointer; display:flex; align-items:center; gap:15px;"><i class="fa-solid fa-calendar-day fa-2x"></i><div><h4>Daily Bonus</h4><p>Claim your daily reward!</p></div></div>
+            <div class="glass-card" onclick="renderWheelScreen()" style="cursor:pointer; display:flex; align-items:center; gap:15px;"><i class="fa-solid fa-dharmachakra fa-2x"></i><div><h4>Earning Wheel</h4><p>Spin the wheel to win big.</p></div></div>
+            <div class="glass-card" onclick="showToast('Coming Soon!')" style="cursor:pointer; display:flex; align-items:center; gap:15px;"><i class="fa-solid fa-gamepad fa-2x"></i><div><h4>Play & Earn</h4><p>Get paid to play games.</p></div></div>`;
+    }
+
+    async function renderDailyBonusScreen(){
+        dom.main.innerHTML = `<i class="fa-solid fa-arrow-left back-button" onclick="renderScreen('earn')"></i><h2 class="screen-title" style="padding-top:50px;">Daily Bonus</h2>` + templates.loader;
+        const today = new Date().toISOString().slice(0, 10);
+        const bonusDoc = await db.collection('users').doc(appState.currentUser.uid).collection('bonuses').doc(today).get();
+        const claimed = bonusDoc.exists;
+        
+        const bonusHTML = `
+            <div class="glass-card" style="text-align:center;">
+                <i class="fa-solid fa-gift" style="font-size: 80px; color: var(--primary-color); margin-bottom: 20px;"></i>
+                <h3>Claim Your Daily Reward!</h3><p style="opacity: 0.8; margin: 10px 0 20px;">Come back every 24 hours to claim a free bonus.</p>
+                <button id="claim-bonus-button" class="btn-primary" ${claimed ? 'disabled' : ''}>${claimed ? 'Claimed Today' : 'Claim ₹1.00 Bonus'}</button>
+            </div>`;
+        dom.main.innerHTML = `<i class="fa-solid fa-arrow-left back-button" onclick="renderScreen('earn')"></i><h2 class="screen-title" style="padding-top:50px;">Daily Bonus</h2>` + bonusHTML;
+        if(!claimed) document.getElementById('claim-bonus-button').addEventListener('click', handleBonusClaim);
+    }
+    
+    async function renderWheelScreen(){
+        dom.main.innerHTML = `<i class="fa-solid fa-arrow-left back-button" onclick="renderScreen('earn')"></i><h2 class="screen-title" style="padding-top:50px;">Earning Wheel</h2>` + templates.loader;
+        
+        const segmentAngle = 360 / WHEEL_PRIZES.length;
+        let gradientParts = [], segmentsHTML = '', currentAngle = 0;
+        WHEEL_PRIZES.forEach(prize => {
+            segmentsHTML += `<div class="wheel-segment" style="--rotation:${currentAngle}deg; --segment-angle:${segmentAngle}deg;"><span>${prize.label}</span></div>`;
+            gradientParts.push(`${prize.color} ${currentAngle}deg ${currentAngle + segmentAngle}deg`);
+            currentAngle += segmentAngle;
+        });
+
+        const wheelHTML = `
+            <div class="wheel-container"><div class="wheel-pointer"></div><div class="wheel" id="earning-wheel" style="background: conic-gradient(from -${segmentAngle/2}deg, ${gradientParts.join(', ')});">${segmentsHTML}</div></div>
+            <div class="glass-card" style="text-align:center;">
+                <button id="spin-wheel-button" class="btn-primary">SPIN</button>
+                <p style="margin-top:10px;">Spins Left: <span id="spins-left-display">--</span></p>
+            </div>`;
+        dom.main.innerHTML = `<i class="fa-solid fa-arrow-left back-button" onclick="renderScreen('earn')"></i><h2 class="screen-title" style="padding-top:50px;">Earning Wheel</h2>` + wheelHTML;
+        
+        document.getElementById('spin-wheel-button').addEventListener('click', handleSpinWheel);
+        updateSpinsLeft();
+    }
     
     function renderProfileScreen() {
         const joinDate = appState.userData.memberSince ? appState.userData.memberSince.toDate().toLocaleDateString() : 'N/A';
         dom.main.innerHTML = `
-            <h2 style="text-align:center; margin-bottom:20px;">My Profile</h2>
+            <h2 class="screen-title">My Profile</h2>
             <div class="glass-card">
                 <p><strong>Username:</strong> ${appState.userData.username}</p>
                 <p><strong>Email:</strong> ${appState.userData.email}</p>
                 <p><strong>Joined On:</strong> ${joinDate}</p>
-                <p><strong>Total Earned:</strong> ₹${(appState.userData.totalEarned || 0).toFixed(2)}</p>
             </div>
-            <div class="glass-card" id="withdraw-btn" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
+            <div class="glass-card" onclick="renderWithdrawScreen()" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
                 <span><i class="fa-solid fa-wallet"></i> Request Withdrawal</span><i class="fa-solid fa-chevron-right"></i>
             </div>`;
-        document.getElementById('withdraw-btn').addEventListener('click', renderWithdrawScreen);
     }
     
     function renderWithdrawScreen(){
         dom.main.innerHTML = `
-            <i class="fa-solid fa-arrow-left" style="cursor:pointer; font-size:24px; margin-bottom:20px;" id="back-to-profile"></i>
+            <i class="fa-solid fa-arrow-left back-button" onclick="renderScreen('profile')"></i>
+            <h2 class="screen-title" style="padding-top:50px;">Withdraw Funds</h2>
             <div class="glass-card">
                 <div class="form-group"><label>Amount (₹)</label><input type="number" id="withdraw-amount" placeholder="e.g., 50.00"></div>
                 <div class="form-group"><label>UPI ID</label><input type="text" id="upi-id" placeholder="yourname@bank"></div>
                 <button id="withdraw-request-button" class="btn-primary">Request Withdrawal</button>
             </div>`;
-        document.getElementById('back-to-profile').addEventListener('click', renderProfileScreen);
         document.getElementById('withdraw-request-button').addEventListener('click', handleWithdrawal);
     }
 
-    // --- 7. HANDLER FUNCTIONS (LOGIN, REGISTER, ETC) ---
+    // 7. ACTION HANDLERS
     async function handleLogin() {
         const email = document.getElementById('login-email-input').value;
         const password = document.getElementById('login-password-input').value;
@@ -255,7 +310,6 @@ const firebaseConfig = {
                         balance: firebase.firestore.FieldValue.increment(REFERRAL_BONUS.FOR_REFERRER),
                         totalEarned: firebase.firestore.FieldValue.increment(REFERRAL_BONUS.FOR_REFERRER)
                     });
-                    // --- END OF INSECURE LOGIC ---
                 } else { showToast("Invalid referral code.", true); }
             }
 
@@ -264,7 +318,8 @@ const firebaseConfig = {
                 username, email, balance: initialBalance, totalEarned: initialBalance,
                 memberSince: firebase.firestore.FieldValue.serverTimestamp(),
                 referralCode: Math.random().toString(36).substring(2, 8).toUpperCase(),
-                referredBy: referredBy
+                referredBy: referredBy,
+                completedTasks: [], spinsLeft: 5, lastSpinDate: null
             });
             showToast("Account created successfully!");
         } catch (e) { showToast(e.message, true); }
@@ -278,40 +333,120 @@ const firebaseConfig = {
         if (appState.userData.balance < amount) return showToast("Insufficient balance.", true);
         
         const button = document.getElementById('withdraw-request-button');
-        button.disabled = true;
-        button.textContent = 'Processing...';
+        button.disabled = true; button.textContent = 'Processing...';
 
-        const withdrawalRef = db.collection('withdrawals').doc();
-        const userRef = db.collection('users').doc(appState.currentUser.uid);
-        
         try {
             await db.runTransaction(async t => {
+                const userRef = db.collection('users').doc(appState.currentUser.uid);
                 t.update(userRef, { balance: firebase.firestore.FieldValue.increment(-amount) });
-                t.set(withdrawalRef, {
-                    userId: appState.currentUser.uid,
-                    username: appState.userData.username,
-                    amount, upiId, status: "pending",
-                    requestedAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
+                const withdrawalRef = db.collection('withdrawals').doc();
+                t.set(withdrawalRef, { userId: appState.currentUser.uid, username: appState.userData.username, amount, upiId, status: "pending", requestedAt: firebase.firestore.FieldValue.serverTimestamp() });
             });
             showToast("Withdrawal request submitted!");
             renderScreen('profile');
         } catch (e) {
             showToast("Error: " + e.message, true);
-            button.disabled = false;
-            button.textContent = 'Request Withdrawal';
+            button.disabled = false; button.textContent = 'Request Withdrawal';
         }
     }
 
-    // --- 8. UTILITY FUNCTIONS ---
+    async function handleTaskCompletion(e) {
+        const button = e.target;
+        const { taskId, url, reward } = button.dataset;
+        button.disabled = true;
+        button.textContent = 'Verifying...';
+        window.open(url, '_blank');
+        
+        setTimeout(async () => {
+            try {
+                await db.collection('users').doc(appState.currentUser.uid).update({
+                    balance: firebase.firestore.FieldValue.increment(parseFloat(reward)),
+                    totalEarned: firebase.firestore.FieldValue.increment(parseFloat(reward)),
+                    completedTasks: firebase.firestore.FieldValue.arrayUnion(taskId)
+                });
+                showToast(`+₹${parseFloat(reward).toFixed(2)} for completing task!`);
+                button.textContent = 'Done';
+            } catch(err){
+                showToast("Error updating balance.", true);
+                button.disabled = false;
+                button.textContent = 'Do It';
+            }
+        }, 3000);
+    }
+    
+    async function handleBonusClaim(e) {
+        e.target.disabled = true;
+        const today = new Date().toISOString().slice(0, 10);
+        const bonusAmount = 1.00;
+        try {
+            await db.collection('users').doc(appState.currentUser.uid).collection('bonuses').doc(today).set({ amount: bonusAmount, claimedAt: new Date() });
+            await db.collection('users').doc(appState.currentUser.uid).update({
+                balance: firebase.firestore.FieldValue.increment(bonusAmount),
+                totalEarned: firebase.firestore.FieldValue.increment(bonusAmount)
+            });
+            showToast(`+₹${bonusAmount.toFixed(2)} claimed!`);
+            e.target.textContent = 'Claimed Today';
+        } catch(err){
+            showToast("Error claiming bonus.", true);
+            e.target.disabled = false;
+        }
+    }
+    
+    async function updateSpinsLeft(){
+        const today = new Date().toISOString().slice(0, 10);
+        const spinsLeftEl = document.getElementById('spins-left-display');
+        if (!spinsLeftEl) return;
+
+        if(appState.userData.lastSpinDate !== today){
+            await db.collection('users').doc(appState.currentUser.uid).update({ spinsLeft: 5, lastSpinDate: today });
+            spinsLeftEl.textContent = 5;
+        } else {
+            spinsLeftEl.textContent = appState.userData.spinsLeft || 0;
+        }
+    }
+    
+    async function handleSpinWheel(e){
+        const button = e.target;
+        if (appState.isSpinning || appState.userData.spinsLeft <= 0) return;
+        appState.isSpinning = true;
+        button.disabled = true;
+
+        await db.collection('users').doc(appState.currentUser.uid).update({ spinsLeft: firebase.firestore.FieldValue.increment(-1) });
+
+        const wheel = document.getElementById('earning-wheel');
+        const randomSegment = Math.floor(Math.random() * WHEEL_PRIZES.length);
+        const prize = WHEEL_PRIZES[randomSegment];
+        const segmentAngle = 360 / WHEEL_PRIZES.length;
+        const stopAngle = (randomSegment * segmentAngle) + (segmentAngle / 2);
+        const currentRotation = parseInt(getComputedStyle(wheel).getPropertyValue('--rotation') || 0);
+        const finalRotation = (currentRotation) + (5 * 360) + stopAngle;
+
+        wheel.style.transition = 'transform 5s cubic-bezier(0.25, 1, 0.5, 1)';
+        wheel.style.transform = `rotate(${finalRotation}deg)`;
+        wheel.style.setProperty('--rotation', finalRotation);
+
+        setTimeout(async () => {
+            showToast(prize.amount > 0 ? `You won ₹${prize.amount.toFixed(2)}!` : "Better luck next time!");
+            if(prize.amount > 0){
+                await db.collection('users').doc(appState.currentUser.uid).update({
+                    balance: firebase.firestore.FieldValue.increment(prize.amount),
+                    totalEarned: firebase.firestore.FieldValue.increment(prize.amount)
+                });
+            }
+            appState.isSpinning = false;
+            updateSpinsLeft();
+            if((appState.userData.spinsLeft || 0) > 0) button.disabled = false;
+        }, 5500);
+    }
+
+    // 8. UTILITY
     function showToast(message, isError = false) {
         dom.toast.textContent = message;
-        dom.toast.style.background = isError ? 'linear-gradient(45deg, #ff758c, #ff7eb3)' : 'linear-gradient(45deg, var(--primary-color), var(--secondary-color))';
+        dom.toast.style.background = isError ? 'linear-gradient(45deg, #ff5350, #d32f2f)' : 'linear-gradient(45deg, var(--primary-color), var(--secondary-color))';
         dom.toast.classList.add('show');
         setTimeout(() => dom.toast.classList.remove('show'), 3000);
     }
-
-    // --- KICKSTART THE APP ---
+    
     init();
 });
 </script>

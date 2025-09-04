@@ -292,15 +292,17 @@
     <script>
     document.addEventListener('DOMContentLoaded', () => {
         // --- 1. FIREBASE CONFIGURATION ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyAvOCamAwrk7yg-I6RVuMfzE_vKbZlAwwo",
-            authDomain: "earnyha-app.firebaseapp.com",
-            projectId: "earnyha-app",
-            storageBucket: "earnyha-app.firebasestorage.app",
-            messagingSenderId: "117222358496",
-            appId: "1:117222358496:web:40ef494c898fea61ebff85",
-            measurementId: "G-ME6C5D883Z"
-        };
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyBCe4VTGNFUP4Hks9v0dhNKj0gfzI_xpW0",
+  authDomain: "earny-ha.firebaseapp.com",
+  databaseURL: "https://earny-ha-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "earny-ha",
+  storageBucket: "earny-ha.firebasestorage.app",
+  messagingSenderId: "643740871774",
+  appId: "1:643740871774:web:9a7d9776f8f8602f6758cf",
+  measurementId: "G-W6LJVYJL2D"
+};
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
